@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    android:orientation="vertical"
+    android:id="@+id/rootLay"
+    android:fitsSystemWindows="true"
+    android:background="@drawable/ic_blackground"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/music_player_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        app:popupTheme="@style/ToolbarPopupTheme"
+        android:theme="@style/ToolbarTheme"
+        android:layout_alignParentTop="true"
+        android:background="@android:color/transparent"
+        />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:layout_below="@id/music_player_toolbar"
+        android:background="#33ffffff"/>
+
+    <include
+        android:id="@+id/discview"
+        layout="@layout/layout_discview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/rlMusicTime"
+        android:layout_below="@id/music_player_toolbar"/>
+
+    <RelativeLayout
+        android:id="@+id/rlMusicTime"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/llPlayOption"
+        android:layout_marginEnd="15dp"
+        android:layout_marginStart="15dp"
+        android:layout_marginTop="10dp">
+
+        <TextView
+            android:id="@+id/tv_current_time"
+            style="@style/music_time_text_sytle"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            tools:text="00:00"/>
+
+        <SeekBar
+            android:id="@+id/seekBar"
+            style="@style/music_time_seek_bar_sytle"
+            android:layout_centerInParent="true"
+            android:layout_toEndOf="@id/tv_current_time"
+            android:layout_toStartOf="@+id/tv_total_time"
+            android:paddingEnd="15dp"
+            android:paddingStart="15dp"
+            />
+
+        <TextView
+            android:id="@+id/tv_total_time"
+            style="@style/music_time_text_sytle"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            tools:text="00:00"/>
+    </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/llPlayOption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingBottom="20dp"
+        android:paddingLeft="20dp"
+        android:paddingRight="20dp"
+        android:paddingTop="10dp"
+        >
+
+        <ImageView
+            android:id="@+id/ivPlayMode"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_play_mode_loop"/>
+
+        <ImageView
+            android:id="@+id/ivLast"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_play_last"/>
+
+        <ImageView
+            android:id="@+id/ivPlayOrPause"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:layout_marginStart="10dp"
+            android:src="@drawable/ic_play"/>
+
+        <ImageView
+            android:id="@+id/ivNext"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_play_next"/>
+
+        <ImageView
+            android:id="@+id/ivLike"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_favorite_no"/>
+    </LinearLayout>
+</RelativeLayout>
