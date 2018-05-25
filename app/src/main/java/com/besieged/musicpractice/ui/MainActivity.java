@@ -139,7 +139,7 @@ public class MainActivity extends BaseActivity{
                 song.setTitle(title);
                 song.setUrl(url);
                 song.setSize(size);
-                song.setImage(arr[i]);
+                song.setImage(arr[i%14]);
                 songs.add(song);
                 i++;
             }

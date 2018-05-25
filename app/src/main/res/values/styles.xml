@@ -17,6 +17,7 @@
     <style name="ToolbarTheme" parent="@style/ThemeOverlay.AppCompat.Light">
         <item name="android:textColor">@color/colorWhite</item>
         <item name="subtitleTextColor">@color/colorWhite</item>
+        <item name="android:fitsSystemWindows">true</item>
         <item name="android:textColorPrimary">@android:color/white</item>
         <item name="actionOverflowMenuStyle">@style/OverflowMenuStyle</item>
     </style>

@@ -10,9 +10,13 @@
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
     <color name="discCerter">#9A1506</color>
+    <color name="colorPrimaryTwo">#DB3F36</color>
 
     <color name="transparent">#00000000</color>
 
+
+    <color name="bottomSheetNormalBackground">#f9ffffff</color>
+    <color name="theme_color_primary">#d20000</color>
 
     <color name="white">#ffffff</color><!--白色 -->
     <color name="ivory">#fffff0</color><!--象牙色 -->

@@ -101,7 +101,6 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 
         mCurrentMusicIndex = position;
         mMusicDatas.addAll(musicDatas);
-//        play(mCurrentMusicIndex);
     }
 
     private void play(final int index) {

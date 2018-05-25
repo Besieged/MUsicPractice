@@ -21,11 +21,11 @@
         />
 
     <View
+        android:id="@+id/view_line"
         android:layout_width="match_parent"
-        android:layout_height="0.5dp"
+        android:layout_height="1.0dip"
         android:layout_below="@id/music_player_toolbar"
-        android:background="#33ffffff"/>
-
+        android:background="@drawable/play_topbar_line" />
     <include
         android:id="@+id/discview"
         layout="@layout/layout_discview"
