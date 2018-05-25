@@ -45,8 +45,6 @@ public class DiscView extends RelativeLayout {
 
     private Context mContext;
 
-    private List<View> mDiscLayouts = new ArrayList<>();
-
     private List<Song> mMusicDatas = new ArrayList<>();
     private List<ObjectAnimator> mDiscAnimators = new ArrayList<>();
     private ObjectAnimator currentAnimator = new ObjectAnimator();
@@ -192,12 +190,10 @@ public class DiscView extends RelativeLayout {
      * 取消其他页面上的动画，并将图片旋转角度复原
      */
     private void resetOtherDiscAnimation(int position) {
-//        for (int i = 0; i < mDiscLayouts.size(); i++) {
-//            if (position == i) continue;
-//            mDiscAnimators.get(position).cancel();
-//            ImageView imageView = (ImageView) mDiscLayouts.get(i).findViewById(R.id.ivDisc);
-//            imageView.setRotation(0);
-//        }
+        for (int i = 0; i < mDiscAnimators.size(); i++) {
+            if (position == i) continue;
+            mDiscAnimators.get(position).cancel();
+        }
     }
 
     private void doWithAnimatorOnPageScroll(int state) {
@@ -328,68 +324,39 @@ public class DiscView extends RelativeLayout {
      * @param disc
      * @param musicPicRes
      */
-    private void setDiscDrawable(final ImageView disc, final String musicPicRes){
-        final int discSize = (int) (mScreenWidth * DisplayUtil.SCALE_DISC_SIZE);
+    private void setDiscDrawable(final ImageView disc, final String musicPicRes, final Bitmap bitmapDisc){
         final int musicPicSize = (int) (mScreenWidth * DisplayUtil.SCALE_MUSIC_PIC_SIZE);
-        if (musicPicRes==null){
-            Bitmap bitmapDisc = Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R
-                    .drawable.ic_disc), discSize, discSize, false);
-            Bitmap bitmapMusicPic = getMusicPicBitmap(musicPicSize,R.drawable.abt);
-            BitmapDrawable discDrawable = new BitmapDrawable(bitmapDisc);
-            RoundedBitmapDrawable roundMusicDrawable = RoundedBitmapDrawableFactory.create
-                    (getResources(), bitmapMusicPic);
+        Glide.with(mContext)
+                .load(musicPicRes==null?R.drawable.abt:musicPicRes)
+                .asBitmap()
+                .into(new SimpleTarget<Bitmap>(musicPicSize,musicPicSize) {
+                    @Override
+                    public void onResourceReady(Bitmap resourse, GlideAnimation<? super Bitmap> glideAnimation) {
 
-            //抗锯齿
-            discDrawable.setAntiAlias(true);
-            roundMusicDrawable.setAntiAlias(true);
+                        Bitmap bitmapMusicPic = Bitmap.createScaledBitmap(resourse, musicPicSize, musicPicSize, true);
 
-            Drawable[] drawables = new Drawable[2];
-            drawables[0] = roundMusicDrawable;
-            drawables[1] = discDrawable;
+                        BitmapDrawable discDrawable = new BitmapDrawable(bitmapDisc);
+                        RoundedBitmapDrawable roundMusicDrawable = RoundedBitmapDrawableFactory.create
+                                (getResources(), bitmapMusicPic);
 
-            LayerDrawable layerDrawable = new LayerDrawable(drawables);
-            int musicPicMargin = (int) ((DisplayUtil.SCALE_DISC_SIZE - DisplayUtil
-                    .SCALE_MUSIC_PIC_SIZE) * mScreenWidth / 2);
-            //调整专辑图片的四周边距，让其显示在正中
-            layerDrawable.setLayerInset(0, musicPicMargin, musicPicMargin, musicPicMargin,
-                    musicPicMargin);
-            disc.setImageDrawable(layerDrawable);
-            bitmapMusicPic.recycle();
-        }else{
-            Glide.with(mContext)
-                    .load(musicPicRes)
-                    .asBitmap()
-                    .into(new SimpleTarget<Bitmap>(musicPicSize,musicPicSize) {
-                        @Override
-                        public void onResourceReady(Bitmap resourse, GlideAnimation<? super Bitmap> glideAnimation) {
+                        //抗锯齿
+                        discDrawable.setAntiAlias(true);
+                        roundMusicDrawable.setAntiAlias(true);
 
-                            Bitmap bitmapDisc = Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R
-                                    .drawable.ic_disc), discSize, discSize, false);
-                            Bitmap bitmapMusicPic = Bitmap.createScaledBitmap(resourse, musicPicSize, musicPicSize, true);
+                        Drawable[] drawables = new Drawable[2];
+                        drawables[0] = roundMusicDrawable;
+                        drawables[1] = discDrawable;
 
-                            BitmapDrawable discDrawable = new BitmapDrawable(bitmapDisc);
-                            RoundedBitmapDrawable roundMusicDrawable = RoundedBitmapDrawableFactory.create
-                                    (getResources(), bitmapMusicPic);
-
-                            //抗锯齿
-                            discDrawable.setAntiAlias(true);
-                            roundMusicDrawable.setAntiAlias(true);
-
-                            Drawable[] drawables = new Drawable[2];
-                            drawables[0] = roundMusicDrawable;
-                            drawables[1] = discDrawable;
-
-                            LayerDrawable layerDrawable = new LayerDrawable(drawables);
-                            int musicPicMargin = (int) ((DisplayUtil.SCALE_DISC_SIZE - DisplayUtil
-                                    .SCALE_MUSIC_PIC_SIZE) * mScreenWidth / 2);
-                            //调整专辑图片的四周边距，让其显示在正中
-                            layerDrawable.setLayerInset(0, musicPicMargin, musicPicMargin, musicPicMargin,
-                                    musicPicMargin);
-                            disc.setImageDrawable(layerDrawable);
-                            bitmapMusicPic.recycle();
-                        }
-                    });
-        }
+                        LayerDrawable layerDrawable = new LayerDrawable(drawables);
+                        int musicPicMargin = (int) ((DisplayUtil.SCALE_DISC_SIZE - DisplayUtil
+                                .SCALE_MUSIC_PIC_SIZE) * mScreenWidth / 2);
+                        //调整专辑图片的四周边距，让其显示在正中
+                        layerDrawable.setLayerInset(0, musicPicMargin, musicPicMargin, musicPicMargin,
+                                musicPicMargin);
+                        disc.setImageDrawable(layerDrawable);
+                        bitmapMusicPic.recycle();
+                    }
+                });
     }
     private Bitmap getMusicPicBitmap(int musicPicSize, int musicPicRes) {
         BitmapFactory.Options options = new BitmapFactory.Options();
@@ -411,11 +378,6 @@ public class DiscView extends RelativeLayout {
 
         return Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(),
                 musicPicRes, options), musicPicSize, musicPicSize, true);
-    }
-
-    public void releaseResource(){
-        mDiscLayouts.clear();
-        mDiscAnimators.clear();
     }
 
     private ObjectAnimator getDiscObjectAnimator(ImageView disc) {
@@ -471,7 +433,6 @@ public class DiscView extends RelativeLayout {
 
     /*播放唱盘动画*/
     private void playDiscAnimator(int index) {
-//        ObjectAnimator objectAnimator = currentAnimator;
         ObjectAnimator objectAnimator = mDiscAnimators.get(index);
         if (objectAnimator.isPaused()) {
             objectAnimator.resume();
@@ -488,7 +449,6 @@ public class DiscView extends RelativeLayout {
 
     /*暂停唱盘动画*/
     private void pauseDiscAnimatior(int index) {
-//        ObjectAnimator objectAnimator = currentAnimator;
         ObjectAnimator objectAnimator = mDiscAnimators.get(index);
         objectAnimator.pause();
         mNeedleAnimator.reverse();
@@ -586,21 +546,15 @@ public class DiscView extends RelativeLayout {
     public void setMusicDataList(List<Song> musicDataList,int position) {
         if (musicDataList.isEmpty()) return;
 
-        mDiscLayouts.clear();
         mMusicDatas.clear();
         mDiscAnimators.clear();
         mMusicDatas.addAll(musicDataList);
 
-//        int i = 0;
-//        for (final Song musicData : mMusicDatas) {
-//            View discLayout = LayoutInflater.from(getContext()).inflate(R.layout.layout_disc,
-//                    mVpContain, false);
-//            ImageView disc = (ImageView) discLayout.findViewById(R.id.ivDisc);
-////            setDiscDrawable(disc,musicData.getImage());
-//
-//            mDiscAnimators.add(getDiscObjectAnimator(disc));
-//            mDiscLayouts.add(discLayout);
-//        }
+        //初始化向mDiscAnimators中放入mMusicDatas.size()个ObjectAnimator
+        for (int i=0;i<mMusicDatas.size();i++){
+            mDiscAnimators.add(new ObjectAnimator());
+        }
+
         mViewPagerAdapter.notifyDataSetChanged();
 
         mVpContain.setCurrentItem(position,false);
@@ -612,32 +566,10 @@ public class DiscView extends RelativeLayout {
         }
     }
 
-    class ViewPagerAdapter extends PagerAdapter {
-        @Override
-        public Object instantiateItem(ViewGroup container, int position) {
-            View discLayout = mDiscLayouts.get(position);
-            container.addView(discLayout);
-            return discLayout;
-        }
-
-        @Override
-        public void destroyItem(ViewGroup container, int position, Object object) {
-            container.removeView(mDiscLayouts.get(position));
-        }
-
-        @Override
-        public int getCount() {
-            return mDiscLayouts.size();
-        }
-
-        @Override
-        public boolean isViewFromObject(View view, Object object) {
-            return view == object;
-        }
-    }
-
     class NewViewPagerAdapter extends PagerAdapter{
 
+        private int discSize = (int) (mScreenWidth * DisplayUtil.SCALE_DISC_SIZE);
+        Bitmap bitmapDisc;
         @Override
         public Object instantiateItem(ViewGroup container, int position) {
 
@@ -648,12 +580,16 @@ public class DiscView extends RelativeLayout {
                 ImageView disc = (ImageView) discLayout.findViewById(R.id.ivDisc);
 
                 currentAnimator = getDiscObjectAnimator(disc);
-                mDiscAnimators.add(currentAnimator);
+                mDiscAnimators.set(position,currentAnimator);//初始化viewpager页面时 替换掉相应位置的ObjectAnimator
 
-                setDiscDrawable(disc,resId);
+                if (bitmapDisc == null || bitmapDisc.isRecycled()){
+                    bitmapDisc = Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R
+                            .drawable.ic_disc), discSize, discSize, false);
+                }
+
+                setDiscDrawable(disc,resId,bitmapDisc);
 
                 discLayout.setTag(R.id.tag_resid,resId);
-                discLayout.setTag(R.id.tag_ani,currentAnimator);
 
                 container.addView(discLayout);
                 return discLayout;
@@ -669,6 +605,8 @@ public class DiscView extends RelativeLayout {
                 for (int i = 0; i < count; i++) {
                     View childView = viewPager.getChildAt(i);
                     if (childView == object) {
+                        ImageView imageView = (ImageView) childView.findViewById(R.id.ivDisc);
+                        releaseImageViewResouce(imageView);
                         viewPager.removeView(childView);
                         break;
                     }
@@ -686,6 +624,23 @@ public class DiscView extends RelativeLayout {
             return view == object;
         }
 
+        /**
+         * 释放图片资源的方法
+         * @param imageView
+         */
+        public void releaseImageViewResouce(ImageView imageView) {
+            if (imageView == null) return;
+            Drawable drawable = imageView.getDrawable();
+            if (drawable != null && drawable instanceof BitmapDrawable) {
+                BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
+                Bitmap bitmap = bitmapDrawable.getBitmap();
+                if (bitmap != null && !bitmap.isRecycled()) {
+                    bitmap.recycle();
+                    bitmap=null;
+                }
+            }
+            System.gc();
+        }
 
         @Override
         public int getItemPosition(Object object) {

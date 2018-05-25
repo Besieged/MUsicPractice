@@ -37,20 +37,20 @@ public class MainActivity extends BaseActivity{
     ListView musicList;
 
     String[] arr = new String[]{
-            "http://p1.music.126.net/hT0qB_Wi-w5a0qhIumB59g==/18619129906686749.jpg?param=130y130",
-            "http://p1.music.126.net/a1uV59DV8OJzn4OVXRlLPw==/109951163071276550.jpg?param=130y130",
-            "http://p1.music.126.net/34YW1QtKxJ_3YnX9ZzKhzw==/2946691234868155.jpg?param=130y130",
-            "http://p1.music.126.net/8GXkHa3eq63ikMMZ2nY8Gw==/109951163249852201.jpg?param=130y130",
-            "http://p1.music.126.net/j_pJoQzzc_QX-mNE7cp_iw==/58274116284396.jpg?param=130y130",
-            "http://p1.music.126.net/GJHxEbDIYWEYROWooTHP1Q==/109951163071269824.jpg?param=130y130",
-            "http://p1.music.126.net/j_pJoQzzc_QX-mNE7cp_iw==/58274116284396.jpg?param=130y130",
-            "http://p1.music.126.net/PsjQ1vycEVG4nhkXQWhwhQ==/52776558146680.jpg?param=130y130",
-            "http://p1.music.126.net/j_pJoQzzc_QX-mNE7cp_iw==/58274116284396.jpg?param=130y130",
-            "http://p1.music.126.net/nghrV1_ZW6lht9Ue7r4Ffg==/7697680906845029.jpg?param=130y130",
-            "http://p1.music.126.net/c0nzSObvxF_DftayAJjXsw==/109951162864860506.jpg?param=130y130",
-            "http://p1.music.126.net/B1ePGczwQUZueJl70TITWQ==/3287539775420245.jpg?param=130y130",
-            "http://p1.music.126.net/f0oeK_W3VPHMUz_a-FX9UA==/109951163144626488.jpg?param=130y130",
-            "http://p1.music.126.net/gWpnVz8ykfQJ-H57rI3gdA==/7887896418087327.jpg?param=130y130"
+            "http://p1.music.126.net/hT0qB_Wi-w5a0qhIumB59g==/18619129906686749.jpg?param=600y600",
+            "http://p1.music.126.net/a1uV59DV8OJzn4OVXRlLPw==/109951163071276550.jpg?param=600y600",
+            "http://p1.music.126.net/34YW1QtKxJ_3YnX9ZzKhzw==/2946691234868155.jpg?param=600y600",
+            "http://p1.music.126.net/8GXkHa3eq63ikMMZ2nY8Gw==/109951163249852201.jpg?param=600y600",
+            "http://p1.music.126.net/j_pJoQzzc_QX-mNE7cp_iw==/58274116284396.jpg?param=600y600",
+            "http://p1.music.126.net/GJHxEbDIYWEYROWooTHP1Q==/109951163071269824.jpg?param=600y600",
+            "http://p1.music.126.net/j_pJoQzzc_QX-mNE7cp_iw==/58274116284396.jpg?param=600y600",
+            "http://p1.music.126.net/PsjQ1vycEVG4nhkXQWhwhQ==/52776558146680.jpg?param=600y600",
+            "http://p1.music.126.net/j_pJoQzzc_QX-mNE7cp_iw==/58274116284396.jpg?param=600y600",
+            "http://p1.music.126.net/nghrV1_ZW6lht9Ue7r4Ffg==/7697680906845029.jpg?param=600y600",
+            "http://p1.music.126.net/c0nzSObvxF_DftayAJjXsw==/109951162864860506.jpg?param=600y600",
+            "http://p1.music.126.net/B1ePGczwQUZueJl70TITWQ==/3287539775420245.jpg?param=600y600",
+            "http://p1.music.126.net/f0oeK_W3VPHMUz_a-FX9UA==/109951163144626488.jpg?param=600y600",
+            "http://p1.music.126.net/gWpnVz8ykfQJ-H57rI3gdA==/7887896418087327.jpg?param=600y600"
     };
     private MusicListAdapter MusicListAdapter;
 

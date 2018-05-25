@@ -82,7 +82,7 @@ public class MusicPlayerActivity extends BaseActivity implements DiscView.IPlayI
     public static final String PARAM_MUSIC_LIST = "PARAM_MUSIC_LIST";
     public static final String PARAM_MUSIC_POSITION = "PARAM_MUSIC_POSITION";
     public static final int DURATION_NEEDLE_ANIAMTOR = 500;
-    @BindView(R.id.discview)
+//    @BindView(R.id.discview)
     DiscView mDisc;
 
 
@@ -162,6 +162,7 @@ public class MusicPlayerActivity extends BaseActivity implements DiscView.IPlayI
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_music_player);
         ButterKnife.bind(this);
+        mDisc = (DiscView) findViewById(R.id.discview);
         setSupportActionBar(musicPlayerToolbar);
         musicPlayerToolbar.setNavigationIcon(R.drawable.ic_arrow_back_white_24dp);
         musicPlayerToolbar.setNavigationOnClickListener(new View.OnClickListener() {
@@ -489,7 +490,6 @@ public class MusicPlayerActivity extends BaseActivity implements DiscView.IPlayI
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mDisc.releaseResource();
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(musicReceiver);
     }
 
