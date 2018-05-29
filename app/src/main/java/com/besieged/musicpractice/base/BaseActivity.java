@@ -12,11 +12,18 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
-import com.besieged.musicpractice.service.MusicService;
 import com.besieged.musicpractice.ui.MusicStateListener;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+
+import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.ACTION_STATUS_MUSIC_COMPLETE;
+import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.ACTION_STATUS_MUSIC_DURATION;
+import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.ACTION_STATUS_MUSIC_PAUSE;
+import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.ACTION_STATUS_MUSIC_PLAY;
+import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.PARAM_MUSIC_CURRENT_POSITION;
+import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.PARAM_MUSIC_DURATION;
+import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.PARAM_MUSIC_IS_OVER;
 
 /**
  * Created with Android Studio
@@ -157,15 +164,15 @@ public class BaseActivity extends AppCompatActivity {
             String action = intent.getAction();
             BaseActivity baseActivity = mReference.get();
             if (baseActivity!=null){
-                if (action.equals(MusicService.ACTION_STATUS_MUSIC_PLAY)) {
-                    int currentPosition = intent.getIntExtra(MusicService.PARAM_MUSIC_CURRENT_POSITION, 0);
+                if (action.equals(ACTION_STATUS_MUSIC_PLAY)) {
+                    int currentPosition = intent.getIntExtra(PARAM_MUSIC_CURRENT_POSITION, 0);
 
-                } else if (action.equals(MusicService.ACTION_STATUS_MUSIC_PAUSE)) {
-                } else if (action.equals(MusicService.ACTION_STATUS_MUSIC_DURATION)) {
-                    int duration = intent.getIntExtra(MusicService.PARAM_MUSIC_DURATION, 0);
+                } else if (action.equals(ACTION_STATUS_MUSIC_PAUSE)) {
+                } else if (action.equals(ACTION_STATUS_MUSIC_DURATION)) {
+                    int duration = intent.getIntExtra(PARAM_MUSIC_DURATION, 0);
 //                    updateMusicDurationInfo(duration);
-                } else if (action.equals(MusicService.ACTION_STATUS_MUSIC_COMPLETE)) {
-                    boolean isOver = intent.getBooleanExtra(MusicService.PARAM_MUSIC_IS_OVER, true);
+                } else if (action.equals(ACTION_STATUS_MUSIC_COMPLETE)) {
+                    boolean isOver = intent.getBooleanExtra(PARAM_MUSIC_IS_OVER, true);
 //                    complete(isOver);
                 }
             }

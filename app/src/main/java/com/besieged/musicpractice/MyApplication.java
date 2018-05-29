@@ -2,6 +2,7 @@ package com.besieged.musicpractice;
 
 import android.app.Activity;
 import android.app.Application;
+import android.content.Context;
 import android.os.Bundle;
 
 import com.besieged.musicpractice.utils.LogUtils;
@@ -18,10 +19,15 @@ public class MyApplication extends Application {
 
     private static MyApplication instance;
 
+    private static Context mContext;
+
     @Override
     public void onCreate() {
         super.onCreate();
         instance = this;
+        if (mContext == null){
+            mContext = getApplicationContext();
+        }
         Logger.addLogAdapter(new AndroidLogAdapter());
 
         this.registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
@@ -66,8 +72,12 @@ public class MyApplication extends Application {
      * 获取application实例
      * @return
      */
-    public MyApplication getInstance(){
+    public static MyApplication getInstance(){
         return instance;
+    }
+
+    public static Context getContext(){
+        return mContext;
     }
 
 }

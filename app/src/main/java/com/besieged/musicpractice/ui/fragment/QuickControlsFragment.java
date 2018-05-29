@@ -14,25 +14,9 @@
 //import android.widget.TextView;
 //import android.widget.Toast;
 //
+//import com.besieged.musicpractice.R;
 //import com.besieged.musicpractice.base.BaseFragment;
-//import com.bilibili.magicasakura.utils.ThemeUtils;
-//import com.bilibili.magicasakura.widgets.TintImageView;
-//import com.bilibili.magicasakura.widgets.TintProgressBar;
-//import com.facebook.common.logging.FLog;
-//import com.facebook.drawee.backends.pipeline.Fresco;
-//import com.facebook.drawee.controller.BaseControllerListener;
-//import com.facebook.drawee.controller.ControllerListener;
-//import com.facebook.drawee.interfaces.DraweeController;
-//import com.facebook.drawee.view.SimpleDraweeView;
-//import com.facebook.imagepipeline.image.ImageInfo;
-//import com.facebook.imagepipeline.image.QualityInfo;
-//import com.facebook.imagepipeline.request.ImageRequest;
-//import com.facebook.imagepipeline.request.ImageRequestBuilder;
-//import com.wm.remusic.MainApplication;
-//import com.wm.remusic.R;
-//import com.wm.remusic.activity.PlayingActivity;
-//import com.wm.remusic.handler.HandlerUtil;
-//import com.wm.remusic.service.MusicPlayer;
+//import com.besieged.musicpractice.player.MusicPlayer;
 //
 //public class QuickControlsFragment extends BaseFragment {
 //

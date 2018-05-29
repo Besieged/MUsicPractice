@@ -26,6 +26,7 @@ import android.widget.TextView;
 import com.besieged.musicpractice.R;
 import com.besieged.musicpractice.base.BaseActivity;
 import com.besieged.musicpractice.model.Song;
+import com.besieged.musicpractice.player.MusicPlayer;
 import com.besieged.musicpractice.service.MusicService;
 import com.besieged.musicpractice.utils.DisplayUtil;
 import com.besieged.musicpractice.utils.FastBlurUtil;
@@ -42,8 +43,13 @@ import java.util.Random;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-import static com.besieged.musicpractice.service.MusicService.PARAM_MUSIC_INDEX;
-import static com.besieged.musicpractice.widget.DiscView.INDEX_NULL;
+import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.ACTION_STATUS_MUSIC_COMPLETE;
+import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.ACTION_STATUS_MUSIC_DURATION;
+import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.ACTION_STATUS_MUSIC_PAUSE;
+import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.ACTION_STATUS_MUSIC_PLAY;
+import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.PARAM_MUSIC_CURRENT_POSITION;
+import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.PARAM_MUSIC_DURATION;
+import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.PARAM_MUSIC_IS_OVER;
 
 /**
  * Created with Android Studio
@@ -85,6 +91,7 @@ public class MusicPlayerActivity extends BaseActivity implements DiscView.IPlayI
 //    @BindView(R.id.discview)
     DiscView mDisc;
 
+    MusicPlayer musicPlayer;
 
     @Override
     public void onMusicInfoChanged(String musicName, String musicAuthor) {
@@ -101,31 +108,18 @@ public class MusicPlayerActivity extends BaseActivity implements DiscView.IPlayI
     public void onMusicChanged(DiscView.MusicChangedStatus musicChangedStatus,int index) {
         switch (musicChangedStatus) {
             case PLAY:{
-                if (index == INDEX_NULL){
-                    play();
-                }else{
-                    mCurrentMusicIndex = index;
-                    play(index);
-                }
+                mCurrentMusicIndex = index;
+                startUpdateSeekBarProgress();
                 break;
             }
             case PAUSE:{
-                pause();
+                pauseUI();
                 break;
             }
             case NEXT:{
-                if (index == INDEX_NULL){
-                    next();
-                }else{
-                    mCurrentMusicIndex = index;
-                    next(index);
-                }
+                resetUI();
                 break;
             }
-//            case LAST:{
-//                last();
-//                break;
-//            }
             case STOP:{
                 stop();
                 break;
@@ -162,6 +156,7 @@ public class MusicPlayerActivity extends BaseActivity implements DiscView.IPlayI
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_music_player);
         ButterKnife.bind(this);
+        musicPlayer = MusicPlayer.getInstance(MusicPlayerActivity.this);
         mDisc = (DiscView) findViewById(R.id.discview);
         setSupportActionBar(musicPlayerToolbar);
         musicPlayerToolbar.setNavigationIcon(R.drawable.ic_arrow_back_white_24dp);
@@ -189,10 +184,10 @@ public class MusicPlayerActivity extends BaseActivity implements DiscView.IPlayI
 
     private void initBroadCastReceiver() {
         IntentFilter filter = new IntentFilter();
-        filter.addAction(MusicService.ACTION_STATUS_MUSIC_PLAY);
-        filter.addAction(MusicService.ACTION_STATUS_MUSIC_PAUSE);
-        filter.addAction(MusicService.ACTION_STATUS_MUSIC_COMPLETE);
-        filter.addAction(MusicService.ACTION_STATUS_MUSIC_DURATION);
+        filter.addAction(ACTION_STATUS_MUSIC_PLAY);
+        filter.addAction(ACTION_STATUS_MUSIC_PAUSE);
+        filter.addAction(ACTION_STATUS_MUSIC_COMPLETE);
+        filter.addAction(ACTION_STATUS_MUSIC_DURATION);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(musicReceiver, filter);
     }
 
@@ -222,11 +217,17 @@ public class MusicPlayerActivity extends BaseActivity implements DiscView.IPlayI
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                seekTo(seekBar.getProgress());
+                musicPlayer.seekTo(seekBar.getProgress());
                 startUpdateSeekBarProgress();
             }
         });
-        mDisc.setMusicDataList(mMusicDatas,mCurrentMusicIndex);
+        //延迟200毫秒开始填充数据，播放音乐
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mDisc.setMusicDataList(mMusicDatas,mCurrentMusicIndex);
+            }
+        },200);
     }
 
     private void try2UpdateMusicPicBackground(final String musicPicRes) {
@@ -278,16 +279,11 @@ public class MusicPlayerActivity extends BaseActivity implements DiscView.IPlayI
         }
     }
 
-    private void seekTo(int position) {
-        Intent intent = new Intent(MusicService.ACTION_OPT_MUSIC_SEEK_TO);
-        intent.putExtra(MusicService.PARAM_MUSIC_SEEK_TO, position);
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
-    }
-
     @Override
     public void onClick(View v) {
         if (v == ivPlayOrPause) {
             mDisc.playOrPause();
+            musicPlayer.playOrPause();
         } else if (v == ivNext) {
             int index = 0;
             if (playMode == 1){
@@ -303,6 +299,9 @@ public class MusicPlayerActivity extends BaseActivity implements DiscView.IPlayI
                 }
             }
             mDisc.next(index);
+            if (playMode == 1){
+                musicPlayer.play(index);
+            }
         } else if (v == ivLast) {
             int index = 0;
             if (playMode == 1){
@@ -318,6 +317,9 @@ public class MusicPlayerActivity extends BaseActivity implements DiscView.IPlayI
                 }
             }
             mDisc.last(index);
+            if (playMode == 1){
+                musicPlayer.play(index);
+            }
         } else if (v == ivPlayMode) {
             changePlayMode();
         } else if (v == ivLike) {
@@ -329,7 +331,7 @@ public class MusicPlayerActivity extends BaseActivity implements DiscView.IPlayI
     }
 
     private void changePlayMode() {
-        Intent intent = new Intent(MusicService.ACTION_OPT_MUSIC_MODE_UPDATE);
+//        Intent intent = new Intent(ACTION_OPT_MUSIC_MODE_UPDATE);
         int index = 0;
         switch (playMode) {
             case 0:
@@ -348,8 +350,9 @@ public class MusicPlayerActivity extends BaseActivity implements DiscView.IPlayI
                 index = playMode;
                 break;
         }
-        intent.putExtra(MusicService.PARAM_MUSIC_MODE, index);
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+        musicPlayer.changeMode(index);
+//        intent.putExtra(PARAM_MUSIC_MODE, index);
+//        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
     private Drawable getForegroundDrawable(int musicPicRes) {
@@ -431,24 +434,24 @@ public class MusicPlayerActivity extends BaseActivity implements DiscView.IPlayI
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            if (action.equals(MusicService.ACTION_STATUS_MUSIC_PLAY)) {
+            if (action.equals(ACTION_STATUS_MUSIC_PLAY)) {
                 ivPlayOrPause.setImageResource(R.drawable.ic_pause);
-                int currentPosition = intent.getIntExtra(MusicService.PARAM_MUSIC_CURRENT_POSITION, 0);
+                int currentPosition = intent.getIntExtra(PARAM_MUSIC_CURRENT_POSITION, 0);
                 seekBar.setProgress(currentPosition);
                 if(!mDisc.isPlaying()){
                     mDisc.playOrPause();
                 }
 
-            } else if (action.equals(MusicService.ACTION_STATUS_MUSIC_PAUSE)) {
+            } else if (action.equals(ACTION_STATUS_MUSIC_PAUSE)) {
                 ivPlayOrPause.setImageResource(R.drawable.ic_play);
                 if (mDisc.isPlaying()) {
                     mDisc.playOrPause();
                 }
-            } else if (action.equals(MusicService.ACTION_STATUS_MUSIC_DURATION)) {
-                int duration = intent.getIntExtra(MusicService.PARAM_MUSIC_DURATION, 0);
+            } else if (action.equals(ACTION_STATUS_MUSIC_DURATION)) {
+                int duration = intent.getIntExtra(PARAM_MUSIC_DURATION, 0);
                 updateMusicDurationInfo(duration);
-            } else if (action.equals(MusicService.ACTION_STATUS_MUSIC_COMPLETE)) {
-                boolean isOver = intent.getBooleanExtra(MusicService.PARAM_MUSIC_IS_OVER, true);
+            } else if (action.equals(ACTION_STATUS_MUSIC_COMPLETE)) {
+                boolean isOver = intent.getBooleanExtra(PARAM_MUSIC_IS_OVER, true);
                 complete(isOver);
             }
         }
@@ -457,6 +460,8 @@ public class MusicPlayerActivity extends BaseActivity implements DiscView.IPlayI
     private void complete(boolean isOver) {
         if (isOver) {
             mDisc.stop();
+            stop();
+            musicPlayer.stop();
         } else {
             int index = 0;
             if (playMode == 1){
@@ -472,6 +477,9 @@ public class MusicPlayerActivity extends BaseActivity implements DiscView.IPlayI
                 }
             }
             mDisc.next(index);
+            if (playMode == 1){
+                musicPlayer.play(index);
+            }
         }
     }
 
@@ -483,10 +491,6 @@ public class MusicPlayerActivity extends BaseActivity implements DiscView.IPlayI
         startUpdateSeekBarProgress();
     }
 
-    private void optMusic(final String action) {
-        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(action));
-    }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -494,17 +498,17 @@ public class MusicPlayerActivity extends BaseActivity implements DiscView.IPlayI
     }
 
     private void play() {
-        optMusic(MusicService.ACTION_OPT_MUSIC_PLAY);
+//        optMusic(ACTION_OPT_MUSIC_PLAY);
+        musicPlayer.play();
         startUpdateSeekBarProgress();
     }
-    private void play(final int index) {
-        Intent i = new Intent(MusicService.ACTION_OPT_MUSIC_PLAY);
-        i.putExtra(PARAM_MUSIC_INDEX,index);
-        LocalBroadcastManager.getInstance(mContext).sendBroadcast(i);
-    }
+//    private void play(final int index) {
+//        Intent i = new Intent(ACTION_OPT_MUSIC_PLAY);
+//        i.putExtra(PARAM_MUSIC_INDEX,index);
+//        LocalBroadcastManager.getInstance(mContext).sendBroadcast(i);
+//    }
 
-    private void pause() {
-        optMusic(MusicService.ACTION_OPT_MUSIC_PAUSE);
+    private void pauseUI() {
         stopUpdateSeekBarProgree();
     }
 
@@ -516,38 +520,7 @@ public class MusicPlayerActivity extends BaseActivity implements DiscView.IPlayI
         seekBar.setProgress(0);
     }
 
-    private void next(final int index) {
-        rootLay.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                Intent i = new Intent(MusicService.ACTION_OPT_MUSIC_NEXT);
-                i.putExtra(PARAM_MUSIC_INDEX,index);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(i);
-            }
-        }, DURATION_NEEDLE_ANIAMTOR);
-        stopUpdateSeekBarProgree();
-        tvCurrentTime.setText(duration2Time(0));
-        tvTotalTime.setText(duration2Time(0));
-    }
-    private void next() {
-        rootLay.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                optMusic(MusicService.ACTION_OPT_MUSIC_NEXT);
-            }
-        }, DURATION_NEEDLE_ANIAMTOR);
-        stopUpdateSeekBarProgree();
-        tvCurrentTime.setText(duration2Time(0));
-        tvTotalTime.setText(duration2Time(0));
-    }
-
-    private void last() {
-        rootLay.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                optMusic(MusicService.ACTION_OPT_MUSIC_LAST);
-            }
-        }, DURATION_NEEDLE_ANIAMTOR);
+    private void resetUI() {
         stopUpdateSeekBarProgree();
         tvCurrentTime.setText(duration2Time(0));
         tvTotalTime.setText(duration2Time(0));

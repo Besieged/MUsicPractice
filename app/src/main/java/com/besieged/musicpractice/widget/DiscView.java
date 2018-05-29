@@ -24,6 +24,7 @@ import android.widget.RelativeLayout;
 
 import com.besieged.musicpractice.R;
 import com.besieged.musicpractice.model.Song;
+import com.besieged.musicpractice.player.MusicPlayer;
 import com.besieged.musicpractice.utils.DisplayUtil;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.animation.GlideAnimation;
@@ -55,7 +56,7 @@ public class DiscView extends RelativeLayout {
     private boolean mIsNeed2StartPlayAnimator = false;
     private MusicStatus musicStatus = MusicStatus.STOP;
 
-    public static final int DURATION_NEEDLE_ANIAMTOR = 500;
+    public static final int DURATION_NEEDLE_ANIAMTOR = 300;
     private NeedleAnimatorStatus needleAnimatorStatus = NeedleAnimatorStatus.IN_FAR_END;
 
     public static final int INDEX_NULL = -1;
@@ -88,11 +89,11 @@ public class DiscView extends RelativeLayout {
 
     public interface IPlayInfo {
         /*用于更新标题栏变化*/
-        public void onMusicInfoChanged(String musicName, String musicAuthor);
+        void onMusicInfoChanged(String musicName, String musicAuthor);
         /*用于更新背景图片*/
-        public void onMusicPicChanged(String musicPicRes);
-        /*用于更新音乐播放状态*/
-        public void onMusicChanged(MusicChangedStatus musicChangedStatus,int index);
+        void onMusicPicChanged(String musicPicRes);
+        /*用于更新音乐播放状态 index-更新当前播放的音乐的index*/
+        void onMusicChanged(MusicChangedStatus status,int index);
     }
 
     public DiscView(Context context) {
@@ -138,28 +139,11 @@ public class DiscView extends RelativeLayout {
         mVpContain.setOverScrollMode(View.OVER_SCROLL_NEVER);
         mVpContain.setOffscreenPageLimit(2);
         mVpContain.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-            int lastPositionOffsetPixels = 0;
             int currentItem = 0;
             @Override
             public void onPageScrolled(int position, float positionOffset, int
                     positionOffsetPixels) {
-                //左滑
-                if (lastPositionOffsetPixels > positionOffsetPixels) {
-                    if (positionOffset < 0.5) {
-                        //notifyMusicInfoChanged(position);
-                    } else {
-                        //notifyMusicInfoChanged(mVpContain.getCurrentItem());
-                    }
-                }
-                //右滑
-                else if (lastPositionOffsetPixels < positionOffsetPixels) {
-                    if (positionOffset > 0.5) {
-                        //notifyMusicInfoChanged(position + 1);
-                    } else {
-                        //notifyMusicInfoChanged(position);
-                    }
-                }
-                lastPositionOffsetPixels = positionOffsetPixels;
+
             }
 
             @Override
@@ -167,9 +151,11 @@ public class DiscView extends RelativeLayout {
                 resetOtherDiscAnimation(position);
                 notifyMusicPicChanged(position);
                 notifyMusicInfoChanged(position);
+                play();
+                //更新playing页面 ui
+                notifyMusicStatusChanged(MusicChangedStatus.PLAY,position);
                 //播放音乐，借用next状态来标识 播放position位置的音乐。
-                notifyMusicStatusChanged(MusicChangedStatus.NEXT,position);
-
+                MusicPlayer.getInstance(mContext).play(position);
                 currentItem = position;
             }
 
@@ -439,12 +425,6 @@ public class DiscView extends RelativeLayout {
         } else {
             objectAnimator.start();
         }
-        /**
-         * 唱盘动画可能执行多次，只有不是音乐不在播放状态，在回调执行播放
-         * */
-        if (musicStatus != MusicStatus.PLAY) {
-            notifyMusicStatusChanged(MusicChangedStatus.PLAY,index);
-        }
     }
 
     /*暂停唱盘动画*/
@@ -497,32 +477,27 @@ public class DiscView extends RelativeLayout {
     }
 
     public void next(int postion) {
-        int currentItem = mVpContain.getCurrentItem();
-        if (currentItem == postion) {
-            resetOtherDiscAnimation(postion);
-            notifyMusicPicChanged(postion);
-            notifyMusicInfoChanged(postion);
-            //播放音乐
-            notifyMusicStatusChanged(MusicChangedStatus.NEXT,postion);
-
-        } else {
+//        int currentItem = mVpContain.getCurrentItem();
+//        if (currentItem == postion) {
+//            resetOtherDiscAnimation(postion);
+//            notifyMusicPicChanged(postion);
+//            notifyMusicInfoChanged(postion);
+//        } else {
             selectMusicWithButton();
             mVpContain.setCurrentItem(postion, true);
-        }
+//        }
     }
 
     public void last(int postion) {
-        int currentItem = mVpContain.getCurrentItem();
-        if (currentItem == postion) {//当传入的postion=currentItem时，重新刷新数据
-            resetOtherDiscAnimation(postion);
-            notifyMusicPicChanged(postion);
-            notifyMusicInfoChanged(postion);
-            //播放音乐
-            notifyMusicStatusChanged(MusicChangedStatus.NEXT,postion);
-        } else {
+//        int currentItem = mVpContain.getCurrentItem();
+//        if (currentItem == postion) {//当传入的postion=currentItem时，重新刷新数据
+//            resetOtherDiscAnimation(postion);
+//            notifyMusicPicChanged(postion);
+//            notifyMusicInfoChanged(postion);
+//        } else {
             selectMusicWithButton();
             mVpContain.setCurrentItem(postion, true);
-        }
+//        }
     }
 
     public boolean isPlaying() {
@@ -556,7 +531,6 @@ public class DiscView extends RelativeLayout {
         }
 
         mViewPagerAdapter.notifyDataSetChanged();
-
         mVpContain.setCurrentItem(position,false);
 
         Song musicData = mMusicDatas.get(position);
