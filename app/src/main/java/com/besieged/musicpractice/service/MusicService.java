@@ -310,6 +310,7 @@ public class MusicService extends Service implements IPlayer,IPlayer.Callback {
         remoteView.setImageViewResource(R.id.image_view_play_last, R.drawable.ic_remote_view_play_last);
         remoteView.setImageViewResource(R.id.image_view_play_next, R.drawable.ic_remote_view_play_next);
 
+        // TODO: 2018/6/26 按钮点击事件未触发，需要排查 
         remoteView.setOnClickPendingIntent(R.id.button_close, getPendingIntent(ACTION_STOP_SERVICE));
         remoteView.setOnClickPendingIntent(R.id.button_play_last, getPendingIntent(ACTION_PLAY_LAST));
         remoteView.setOnClickPendingIntent(R.id.button_play_next, getPendingIntent(ACTION_PLAY_NEXT));
@@ -340,7 +341,6 @@ public class MusicService extends Service implements IPlayer,IPlayer.Callback {
     // PendingIntent
 
     private PendingIntent getPendingIntent(String action) {
-//        return PendingIntent.getService(this, 0, new Intent(action), 0);
         return PendingIntent.getService(this, 0, new Intent(action), 0);
     }
 

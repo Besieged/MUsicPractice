@@ -9,6 +9,7 @@ import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -158,6 +159,13 @@ public class MainActivity extends BaseActivity{
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_toolbar, menu);
         return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        //暂时在这里关闭service
+        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent("ACTION_STOP_SERVICE"));
     }
 
     private void setToolbar() {
