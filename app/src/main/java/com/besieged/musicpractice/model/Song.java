@@ -27,10 +27,12 @@ public class Song implements Serializable{
 
     private String image;//图片
 
+    private byte[] imgBytes;//图片的bitmap
+
     public Song() {
     }
 
-    public Song(long id, String name, String title, String artist, String url, long duration, long size, String album) {
+    public Song(long id, String name, String title, String artist, String url, long duration, long size, String album, String image, byte[] imgBytes) {
         this.id = id;
         this.name = name;
         this.title = title;
@@ -40,6 +42,7 @@ public class Song implements Serializable{
         this.size = size;
         this.album = album;
         this.image = image;
+        this.imgBytes = imgBytes;
     }
 
     public long getId() {
@@ -112,5 +115,13 @@ public class Song implements Serializable{
 
     public void setImage(String image) {
         this.image = image;
+    }
+
+    public byte[] getImgBytes() {
+        return imgBytes;
+    }
+
+    public void setImgBytes(byte[] imgBytes) {
+        this.imgBytes = imgBytes;
     }
 }

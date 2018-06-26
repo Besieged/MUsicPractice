@@ -21,8 +21,9 @@ import com.besieged.musicpractice.R;
 import com.besieged.musicpractice.adapter.MusicListAdapter;
 import com.besieged.musicpractice.base.BaseActivity;
 import com.besieged.musicpractice.model.Song;
+import com.besieged.musicpractice.player.MusicPlayer;
+import com.besieged.musicpractice.utils.AlbumUtils;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,6 +56,7 @@ public class MainActivity extends BaseActivity{
     private MusicListAdapter MusicListAdapter;
 
     List<Song> songList;
+    MusicPlayer mediaPlayer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,6 +64,7 @@ public class MainActivity extends BaseActivity{
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         setToolbar();
+        mediaPlayer = MusicPlayer.getInstance();
         //动态申请权限
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.READ_EXTERNAL_STORAGE)
@@ -91,8 +94,6 @@ public class MainActivity extends BaseActivity{
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             Intent i = new Intent(MainActivity.this,MusicPlayerActivity.class);
 
-            Song s = songList.get(position);
-            i.putExtra("songList", (Serializable) songList);
             i.putExtra("position",position);
             startActivity(i);
         }
@@ -104,6 +105,7 @@ public class MainActivity extends BaseActivity{
         if(requestCode == 0) {
             if(grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 songList = getSongList();
+
                 MusicListAdapter = new MusicListAdapter(songList, this,mocl);
 
                 musicList.setAdapter(MusicListAdapter);
@@ -114,7 +116,7 @@ public class MainActivity extends BaseActivity{
 
     private List<Song> getSongList(){
         Cursor cursor = getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,null
-        ,null,null, MediaStore.Audio.Media.DEFAULT_SORT_ORDER);
+        ,null ,null, MediaStore.Audio.Media.DEFAULT_SORT_ORDER);
 
         List<Song> songs = new ArrayList<Song>();
         int i = 0;
@@ -129,6 +131,7 @@ public class MainActivity extends BaseActivity{
             long size = cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.SIZE));
             String album = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
             int isMusic = cursor.getInt(cursor.getColumnIndex(MediaStore.Audio.Media.IS_MUSIC));
+            byte[] bytes = AlbumUtils.parseAlbumByte(url);
 
             if (isMusic != 0){
                 song.setId(id);
@@ -139,11 +142,14 @@ public class MainActivity extends BaseActivity{
                 song.setTitle(title);
                 song.setUrl(url);
                 song.setSize(size);
-                song.setImage(arr[i%14]);
+                song.setImage("");
+                song.setImgBytes(bytes);
                 songs.add(song);
                 i++;
             }
         }
+        //设置playing list
+        mediaPlayer.setPlayList(songs);
         return songs;
     }
 

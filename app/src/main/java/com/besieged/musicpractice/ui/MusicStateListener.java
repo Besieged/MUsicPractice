@@ -12,7 +12,5 @@ public interface MusicStateListener {
 
      void updateTime();
 
-     void changeTheme();
-
      void reloadAdapter();
 }

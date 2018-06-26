@@ -57,11 +57,6 @@ public class BaseFragment extends Fragment implements MusicStateListener {
     }
 
     @Override
-    public void changeTheme() {
-
-    }
-
-    @Override
     public void reloadAdapter() {
 
     }

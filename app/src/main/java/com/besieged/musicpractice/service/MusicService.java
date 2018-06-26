@@ -1,40 +1,39 @@
 package com.besieged.musicpractice.service;
 
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Bitmap;
 import android.media.MediaPlayer;
-import android.net.Uri;
+import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.app.NotificationCompat;
+import android.widget.RemoteViews;
 
+import com.besieged.musicpractice.R;
 import com.besieged.musicpractice.model.Song;
+import com.besieged.musicpractice.player.IPlayer;
+import com.besieged.musicpractice.player.MusicPlayer;
+import com.besieged.musicpractice.ui.MainActivity;
 import com.besieged.musicpractice.ui.MusicPlayerActivity;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.animation.GlideAnimation;
+import com.bumptech.glide.request.target.SimpleTarget;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
-import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.ACTION_OPT_MUSIC_LAST;
-import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.ACTION_OPT_MUSIC_MODE_UPDATE;
-import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.ACTION_OPT_MUSIC_NEXT;
-import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.ACTION_OPT_MUSIC_PAUSE;
-import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.ACTION_OPT_MUSIC_PLAY;
-import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.ACTION_OPT_MUSIC_SEEK_TO;
-import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.ACTION_STATUS_MUSIC_COMPLETE;
 import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.ACTION_STATUS_MUSIC_DURATION;
-import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.ACTION_STATUS_MUSIC_PAUSE;
 import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.ACTION_STATUS_MUSIC_PLAY;
 import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.PARAM_MUSIC_CURRENT_POSITION;
 import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.PARAM_MUSIC_DURATION;
-import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.PARAM_MUSIC_INDEX;
-import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.PARAM_MUSIC_IS_OVER;
-import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.PARAM_MUSIC_MODE;
 import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.PARAM_MUSIC_POSITION;
-import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.PARAM_MUSIC_SEEK_TO;
 
 /**
  * Created with Android Studio
@@ -42,144 +41,183 @@ import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.PARAM_MUSIC
  * Date: 2018/5/22.
  */
 
-public class MusicService extends Service implements MediaPlayer.OnCompletionListener {
+public class MusicService extends Service implements IPlayer,IPlayer.Callback {
 
-    /**
-     * 播放模式
-     */
-    public static final int MUSIC_MODE_LIST_LOOP = 0;
-    public static final int MUSIC_MODE_SINGLE_LOOP = 1;
-    public static final int MUSIC_MODE_RANDOM_PLAY = 2;
 
+    MusicPlayer mPlayer;
+
+    private static final String ACTION_PLAY_TOGGLE = "ACTION_PLAY_TOGGLE";
+    private static final String ACTION_PLAY_LAST = "ACTION_PLAY_LAST";
+    private static final String ACTION_PLAY_NEXT = "ACTION_PLAY_NEXT";
+    private static final String ACTION_STOP_SERVICE = "ACTION_STOP_SERVICE";
+
+    private static final int NOTIFICATION_ID = 1;
+
+    private RemoteViews mContentViewBig, mContentViewSmall;
 
     private int mCurrentMusicIndex = 0;
     private boolean mIsMusicPause = false;
-    public int musicPlayMode = MUSIC_MODE_LIST_LOOP;
     private List<Song> mMusicDatas = new ArrayList<>();
 
     private MusicReceiver mMusicReceiver = new MusicReceiver();
     private MediaPlayer mMediaPlayer = new MediaPlayer();
 
+    private final Binder mBinder = new LocalBinder();
+
+    public class LocalBinder extends Binder {
+        public MusicService getService() {
+            return MusicService.this;
+        }
+    }
+
     /**
      * 广播action 数组，添加action直接在这里写
      */
     private String[] actionArrs = new String[]{
-            ACTION_OPT_MUSIC_PLAY,
-            ACTION_OPT_MUSIC_PAUSE,
-            ACTION_OPT_MUSIC_NEXT,
-            ACTION_OPT_MUSIC_LAST,
-            ACTION_OPT_MUSIC_SEEK_TO,
-            ACTION_OPT_MUSIC_MODE_UPDATE
+            ACTION_STOP_SERVICE,
+            ACTION_PLAY_LAST,
+            ACTION_PLAY_NEXT,
+            ACTION_STOP_SERVICE
     };
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return mBinder;
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
+        mPlayer = MusicPlayer.getInstance();
+        mPlayer.registerCallback(this);
         initBoardCastReceiver();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         initMusicDatas(intent);
-        return super.onStartCommand(intent, flags, startId);
+        if (intent != null) {
+            String action = intent.getAction();
+            if (ACTION_PLAY_TOGGLE.equals(action)) {
+                if (isPlaying()) {
+                    pause();
+                } else {
+                    play();
+                }
+            } else if (ACTION_PLAY_NEXT.equals(action)) {
+                playNext();
+            } else if (ACTION_PLAY_LAST.equals(action)) {
+                playLast();
+            } else if (ACTION_STOP_SERVICE.equals(action)) {
+                if (isPlaying()) {
+                    pause();
+                }
+                stopForeground(true);
+                unregisterCallback(this);
+            }
+        }
+        return START_STICKY;
     }
 
     private void initMusicDatas(Intent intent) {
         if (intent == null) return;
-        List<Song> musicDatas = (List<Song>) intent.getSerializableExtra(MusicPlayerActivity.PARAM_MUSIC_LIST);
+        List<Song> musicDatas = mPlayer.getSongList();
         int position = intent.getIntExtra(MusicPlayerActivity.PARAM_MUSIC_POSITION,0);
 
         mCurrentMusicIndex = position;
         mMusicDatas.addAll(musicDatas);
     }
 
-    private void play(final int index) {
-        if (index >= mMusicDatas.size()) return;
-        if (mCurrentMusicIndex == index && mIsMusicPause) {
-            mMediaPlayer.start();
-        } else {
-            mMediaPlayer.stop();
-            mMediaPlayer = null;
-
-            mMediaPlayer = MediaPlayer.create(getApplicationContext(), Uri.parse(mMusicDatas.get(index).getUrl()));
-            mMediaPlayer.start();
-            mMediaPlayer.setOnCompletionListener(this);
-            mCurrentMusicIndex = index;
-            mIsMusicPause = false;
-
-            int duration = mMediaPlayer.getDuration();
-            sendMusicDurationBroadCast(duration);
-        }
-        sendMusicStatusBroadCast(ACTION_STATUS_MUSIC_PLAY);
-    }
-
-    private void pause() {
-        mMediaPlayer.pause();
-        mIsMusicPause = true;
-        sendMusicStatusBroadCast(ACTION_STATUS_MUSIC_PAUSE);
-    }
-
-    private void stop() {
-        mMediaPlayer.stop();
-    }
-
-    private void next(int index) {
-        play(index);
-    }
-    private void next() {
-        int index = MUSIC_MODE_LIST_LOOP;
-        if (musicPlayMode == MUSIC_MODE_SINGLE_LOOP){
-            index = mCurrentMusicIndex;
-        }else if (musicPlayMode == MUSIC_MODE_RANDOM_PLAY){
-            Random random = new Random();
-            index = random.nextInt(mMusicDatas.size());
-        }else if (musicPlayMode == MUSIC_MODE_LIST_LOOP){
-            if (mCurrentMusicIndex + 1 >= mMusicDatas.size()){
-                index = MUSIC_MODE_LIST_LOOP;
-            }else {
-                index = mCurrentMusicIndex + 1;
-            }
-        }
-        play(index);
-    }
-
-    private void last() {
-        int index = MUSIC_MODE_LIST_LOOP;
-        if (musicPlayMode == MUSIC_MODE_SINGLE_LOOP){
-            index = mCurrentMusicIndex;
-        }else if (musicPlayMode == MUSIC_MODE_RANDOM_PLAY){
-            Random random = new Random();
-            index = random.nextInt(mMusicDatas.size());
-        }else if (musicPlayMode == MUSIC_MODE_LIST_LOOP){
-            if (mCurrentMusicIndex==0){
-                index = mMusicDatas.size()-1;
-            }else {
-                index = mCurrentMusicIndex - 1;
-            }
-        }
-        play(index);
-    }
-
-    private void seekTo(Intent intent) {
-        if (mMediaPlayer.isPlaying()) {
-            int position = intent.getIntExtra(PARAM_MUSIC_SEEK_TO, 0);
-            mMediaPlayer.seekTo(position);
-        }
-    }
     @Override
-    public void onCompletion(MediaPlayer mp) {
-        sendMusicCompleteBroadCast();
+    public void setPlayList(List<Song> list) {
+        mPlayer.setPlayList(list);
     }
-    private void sendMusicCompleteBroadCast() {
-        Intent intent = new Intent(ACTION_STATUS_MUSIC_COMPLETE);
-        intent.putExtra(PARAM_MUSIC_IS_OVER, false);
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+
+    @Override
+    public boolean play() {
+        return mPlayer.play();
+    }
+
+    @Override
+    public boolean play(List<Song> list) {
+        return mPlayer.play(list);
+    }
+
+    @Override
+    public boolean play(List<Song> list, int startIndex) {
+        return mPlayer.play(list,startIndex);
+    }
+
+    @Override
+    public boolean play(Song song) {
+        return mPlayer.play(song);
+    }
+
+    @Override
+    public boolean playLast() {
+        return mPlayer.playLast();
+    }
+
+    @Override
+    public boolean playNext() {
+        return mPlayer.playNext();
+    }
+
+    @Override
+    public boolean pause() {
+        return mPlayer.pause();
+    }
+
+    @Override
+    public boolean isPlaying() {
+        return mPlayer.isPlaying();
+    }
+
+    @Override
+    public int getProgress() {
+        return mPlayer.getProgress();
+    }
+
+    @Override
+    public Song getPlayingSong() {
+        return mPlayer.getPlayingSong();
+    }
+
+    @Override
+    public int getmCurrentMusicIndex() {
+        return mPlayer.getmCurrentMusicIndex();
+    }
+
+    @Override
+    public boolean seekTo(int progress) {
+        return mPlayer.seekTo(progress);
+    }
+
+    @Override
+    public void setPlayMode(int playMode) {
+        mPlayer.setPlayMode(playMode);
+    }
+
+    @Override
+    public void registerCallback(Callback callback) {
+        mPlayer.registerCallback(callback);
+    }
+
+    @Override
+    public void unregisterCallback(Callback callback) {
+        mPlayer.unregisterCallback(callback);
+    }
+
+    @Override
+    public void removeCallbacks() {
+        mPlayer.removeCallbacks();
+    }
+
+    @Override
+    public void releasePlayer() {
+        mPlayer.releasePlayer();
+        super.onDestroy();
     }
 
     private void sendMusicDurationBroadCast(int duration) {
@@ -207,33 +245,126 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
         LocalBroadcastManager.getInstance(this).registerReceiver(mMusicReceiver,intentFilter);
     }
 
+    @Override
+    public void onSwitchLast(@Nullable Song last) {
+        showNotification();
+    }
+
+    @Override
+    public void onSwitchNext(@Nullable Song next) {
+        showNotification();
+    }
+
+    @Override
+    public void onComplete(@Nullable Song next) {
+        showNotification();
+    }
+
+    @Override
+    public void onPlayStatusChanged(boolean isPlaying) {
+        showNotification();
+    }
+
+    /**
+     * Show a notification while this service is running.
+     */
+    private void showNotification() {
+        // The PendingIntent to launch our activity if the user selects this notification
+        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), 0);
+
+        // Set the info for the views that show in the notification panel.
+        Notification notification = new NotificationCompat.Builder(this)
+                .setSmallIcon(R.mipmap.ic_launcher)  // the status icon
+                .setWhen(System.currentTimeMillis())  // the time stamp
+                .setContentIntent(contentIntent)  // The intent to send when the entry is clicked
+                .setCustomContentView(getSmallContentView())
+                .setCustomBigContentView(getBigContentView())
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setOngoing(true)
+                .build();
+
+        // Send the notification.
+        startForeground(NOTIFICATION_ID, notification);
+    }
+
+    private RemoteViews getSmallContentView() {
+        if (mContentViewSmall == null) {
+            mContentViewSmall = new RemoteViews(getPackageName(), R.layout.remote_view_music_player_small);
+            setUpRemoteView(mContentViewSmall);
+        }
+        updateRemoteViews(mContentViewSmall);
+        return mContentViewSmall;
+    }
+
+    private RemoteViews getBigContentView() {
+        if (mContentViewBig == null) {
+            mContentViewBig = new RemoteViews(getPackageName(), R.layout.remote_view_music_player);
+            setUpRemoteView(mContentViewBig);
+        }
+        updateRemoteViews(mContentViewBig);
+        return mContentViewBig;
+    }
+
+    private void setUpRemoteView(RemoteViews remoteView) {
+        remoteView.setImageViewResource(R.id.image_view_close, R.drawable.ic_remote_view_close);
+        remoteView.setImageViewResource(R.id.image_view_play_last, R.drawable.ic_remote_view_play_last);
+        remoteView.setImageViewResource(R.id.image_view_play_next, R.drawable.ic_remote_view_play_next);
+
+        remoteView.setOnClickPendingIntent(R.id.button_close, getPendingIntent(ACTION_STOP_SERVICE));
+        remoteView.setOnClickPendingIntent(R.id.button_play_last, getPendingIntent(ACTION_PLAY_LAST));
+        remoteView.setOnClickPendingIntent(R.id.button_play_next, getPendingIntent(ACTION_PLAY_NEXT));
+        remoteView.setOnClickPendingIntent(R.id.button_play_toggle, getPendingIntent(ACTION_PLAY_TOGGLE));
+    }
+
+    private void updateRemoteViews(final RemoteViews remoteView) {
+        Song currentSong = mPlayer.getPlayingSong();
+        if (currentSong != null) {
+            remoteView.setTextViewText(R.id.text_view_name, currentSong.getTitle());
+            remoteView.setTextViewText(R.id.text_view_artist, currentSong.getArtist());
+        }
+        remoteView.setImageViewResource(R.id.image_view_play_toggle, isPlaying()
+                ? R.drawable.ic_remote_view_pause : R.drawable.ic_remote_view_play);
+        byte[] bytes = currentSong.getImgBytes();
+        if (bytes == null) {
+            remoteView.setImageViewResource(R.id.image_view_album, R.mipmap.ic_launcher);
+        } else {
+            Glide.with(MusicService.this).load(bytes).asBitmap().into(new SimpleTarget<Bitmap>() {
+                @Override
+                public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
+                    remoteView.setImageViewBitmap(R.id.image_view_album, resource);
+                }
+            });
+        }
+    }
+
+    // PendingIntent
+
+    private PendingIntent getPendingIntent(String action) {
+//        return PendingIntent.getService(this, 0, new Intent(action), 0);
+        return PendingIntent.getService(this, 0, new Intent(action), 0);
+    }
+
     class MusicReceiver extends BroadcastReceiver {
 
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            if (action.equals(ACTION_OPT_MUSIC_PLAY)) {
-                int index = intent.getIntExtra(PARAM_MUSIC_INDEX,-1);
-                if (index != -1){
-                    play(index);
-                }else {
-                    play(mCurrentMusicIndex);
+            if (ACTION_PLAY_TOGGLE.equals(action)) {
+                if (isPlaying()) {
+                    pause();
+                } else {
+                    play();
                 }
-            } else if (action.equals(ACTION_OPT_MUSIC_PAUSE)) {
-                pause();
-            } else if (action.equals(ACTION_OPT_MUSIC_LAST)) {
-                last();
-            } else if (action.equals(ACTION_OPT_MUSIC_NEXT)) {
-                int index = intent.getIntExtra(PARAM_MUSIC_INDEX,-1);
-                if (index != -1){
-                    next(index);
-                }else{
-                    next(mCurrentMusicIndex);
+            } else if (ACTION_PLAY_NEXT.equals(action)) {
+                playNext();
+            } else if (ACTION_PLAY_LAST.equals(action)) {
+                playLast();
+            } else if (ACTION_STOP_SERVICE.equals(action)) {
+                if (isPlaying()) {
+                    pause();
                 }
-            } else if (action.equals(ACTION_OPT_MUSIC_SEEK_TO)) {
-                seekTo(intent);
-            } else if (action.equals(ACTION_OPT_MUSIC_MODE_UPDATE)){
-                musicPlayMode = intent.getIntExtra(PARAM_MUSIC_MODE,0);
+                stopForeground(true);
+                unregisterCallback(MusicService.this);
             }
         }
     }
@@ -241,8 +372,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mMediaPlayer.release();
-        mMediaPlayer = null;
+        releasePlayer();
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mMusicReceiver);
     }
 }

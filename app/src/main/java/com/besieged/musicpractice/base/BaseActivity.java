@@ -7,12 +7,15 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
+import com.besieged.musicpractice.R;
 import com.besieged.musicpractice.ui.MusicStateListener;
+import com.besieged.musicpractice.ui.fragment.QuickControlsFragment;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -31,37 +34,37 @@ import static com.besieged.musicpractice.player.PlayerMSG.ACTION_MSG.PARAM_MUSIC
  * Date: 2018/5/18.
  */
 
-public class BaseActivity extends AppCompatActivity {
+public class BaseActivity extends AppCompatActivity{
 
     public Context mContext;
     private ArrayList<MusicStateListener> mMusicListener = new ArrayList<>();
-//    private QuickControlsFragment fragment; //底部播放控制栏
+    private QuickControlsFragment fragment; //底部播放控制栏
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mContext = this;
+        mContext = getApplicationContext();
         makeStatusBarTransparent();
         AppManager.getInstance().addActivity(this); //添加到栈中
-//        showQuickControl(true);
+        showQuickControl(true);
     }
     /**
      * @param show 显示或关闭底部播放控制栏
      */
-//    protected void showQuickControl(boolean show) {
-//        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-//        if (show) {
-//            if (fragment == null) {
-//                fragment = QuickControlsFragment.newInstance();
-//                ft.add(R.id.bottom_container, fragment).commitAllowingStateLoss();
-//            } else {
-//                ft.show(fragment).commitAllowingStateLoss();
-//            }
-//        } else {
-//            if (fragment != null)
-//                ft.hide(fragment).commitAllowingStateLoss();
-//        }
-//    }
+    protected void showQuickControl(boolean show) {
+        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        if (show) {
+            if (fragment == null) {
+                fragment = QuickControlsFragment.newInstance();
+                ft.add(R.id.bottom_container, fragment).commitAllowingStateLoss();
+            } else {
+                ft.show(fragment).commitAllowingStateLoss();
+            }
+        } else {
+            if (fragment != null)
+                ft.hide(fragment).commitAllowingStateLoss();
+        }
+    }
 
     /**
      * 更新播放队列
@@ -121,15 +124,6 @@ public class BaseActivity extends AppCompatActivity {
     public void updateBuffer(int p) {
 
     }
-
-    public void changeTheme() {
-        for (final MusicStateListener listener : mMusicListener) {
-            if (listener != null) {
-                listener.changeTheme();
-            }
-        }
-    }
-
     /**
      * @param l 歌曲是否加载中
      */
