@@ -1,7 +1,5 @@
 package com.besieged.musicpractice.model;
 
-import org.litepal.crud.DataSupport;
-
 import java.io.Serializable;
 
 /**
@@ -10,7 +8,7 @@ import java.io.Serializable;
  * Date: 2018/5/18.
  */
 
-public class Song extends DataSupport implements Serializable{
+public class Song implements Serializable{
 
     private long musicId;
 
