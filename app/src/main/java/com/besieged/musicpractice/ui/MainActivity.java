@@ -1,15 +1,16 @@
 package com.besieged.musicpractice.ui;
 
 import android.Manifest;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -21,8 +22,10 @@ import android.widget.Toast;
 import com.besieged.musicpractice.R;
 import com.besieged.musicpractice.adapter.MusicListAdapter;
 import com.besieged.musicpractice.base.BaseActivity;
+import com.besieged.musicpractice.db.DBUtil;
 import com.besieged.musicpractice.model.Song;
 import com.besieged.musicpractice.player.MusicPlayer;
+import com.besieged.musicpractice.service.MusicService;
 import com.besieged.musicpractice.utils.AlbumUtils;
 
 import java.util.ArrayList;
@@ -30,6 +33,10 @@ import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+
+import static com.besieged.musicpractice.db.MyDatabaseHelper.SONG;
+import static com.besieged.musicpractice.service.MusicService.ACTION_PLAY_POSITION;
+import static com.besieged.musicpractice.ui.MusicPlayerActivity.PARAM_MUSIC_POSITION;
 
 public class MainActivity extends BaseActivity{
 
@@ -69,17 +76,23 @@ public class MainActivity extends BaseActivity{
         //动态申请权限
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.READ_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED){
             ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE},
                     0);
         } else {
             songList = getSongList();
-        }
-        MusicListAdapter = new MusicListAdapter(songList, MainActivity.this,mocl);
+            MusicListAdapter = new MusicListAdapter(songList, MainActivity.this,mocl);
 
-        musicList.setAdapter(MusicListAdapter);
-        musicList.setOnItemClickListener(oicl);
+            musicList.setAdapter(MusicListAdapter);
+            musicList.setOnItemClickListener(oicl);
+
+            Intent intent = new Intent(MainActivity.this, MusicService.class);
+            intent.putExtra(PARAM_MUSIC_POSITION, 0);
+            startService(intent);
+        }
     }
 
     com.besieged.musicpractice.adapter.MusicListAdapter.MoreItemOnclickListener mocl = new MusicListAdapter.MoreItemOnclickListener() {
@@ -93,10 +106,10 @@ public class MainActivity extends BaseActivity{
     AdapterView.OnItemClickListener oicl = new AdapterView.OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            Intent i = new Intent(MainActivity.this,MusicPlayerActivity.class);
-
-            i.putExtra("position",position);
-            startActivity(i);
+            Intent intent = new Intent(MainActivity.this, MusicService.class);
+            intent.putExtra(PARAM_MUSIC_POSITION, position);
+            intent.setAction(ACTION_PLAY_POSITION);
+            startService(intent);
         }
     };
 
@@ -111,16 +124,79 @@ public class MainActivity extends BaseActivity{
 
                 musicList.setAdapter(MusicListAdapter);
                 musicList.setOnItemClickListener(oicl);
+                Intent intent = new Intent(MainActivity.this, MusicService.class);
+                intent.putExtra(PARAM_MUSIC_POSITION, 0);
+                startService(intent);
             }
         }
     }
 
     private List<Song> getSongList(){
+        SQLiteDatabase db = DBUtil.getDatabase();
+
+        List<Song> songs = new ArrayList<Song>();
+
+        Cursor cursor = DBUtil.queryAll(db,"song");
+        while (cursor.moveToNext()){
+            Song song = new Song();
+            long id = cursor.getLong(cursor.getColumnIndex("musicid"));
+            String title = cursor.getString(cursor.getColumnIndex("title"));
+            String name = cursor.getString(cursor.getColumnIndex("name"));
+            String artist  = cursor.getString(cursor.getColumnIndex("artist"));
+            String url = cursor.getString(cursor.getColumnIndex("url"));
+            long duration = cursor.getLong(cursor.getColumnIndex("duration"));
+            long size = cursor.getLong(cursor.getColumnIndex("size"));
+            String album = cursor.getString(cursor.getColumnIndex("album"));
+            byte[] bytes = cursor.getBlob(cursor.getColumnIndex("imgbytes"));
+
+            song.setMusicId(id);
+            song.setAlbum(album);
+            song.setArtist(artist);
+            song.setDuration(duration);
+            song.setName(name);
+            song.setTitle(title);
+            song.setUrl(url);
+            song.setSize(size);
+            song.setImage("");
+            song.setImgBytes(bytes);
+            songs.add(song);
+        }
+        cursor.close();
+
+        if (songs.size() == 0){
+            songs = initSongList();
+            insertDB(db,songs);
+        }
+        //设置playing list
+        mediaPlayer.setPlayList(songs);
+        return songs;
+    }
+
+    private void insertDB(SQLiteDatabase db,List<Song> songs){
+        for (int i=0;i<songs.size();i++){
+            Song song = songs.get(i);
+            ContentValues cv = new ContentValues();
+            cv.put("album",song.getAlbum());
+            cv.put("artist",song.getArtist());
+            cv.put("duration",song.getDuration());
+            cv.put("image",song.getImage());
+            cv.put("imgbytes",song.getImgBytes());
+            cv.put("musicid",song.getMusicId());
+            cv.put("name",song.getName());
+            cv.put("size",song.getSize());
+            cv.put("title",song.getTitle());
+            cv.put("url",song.getUrl());
+
+            DBUtil.insert(db,SONG,null,cv);
+        }
+        db.close();
+    }
+
+    private List<Song> initSongList(){
         Cursor cursor = getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,null
         ,null ,null, MediaStore.Audio.Media.DEFAULT_SORT_ORDER);
 
         List<Song> songs = new ArrayList<Song>();
-        int i = 0;
         while (cursor.moveToNext()){
             Song song = new Song();
             long id = cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media._ID));
@@ -135,7 +211,7 @@ public class MainActivity extends BaseActivity{
             byte[] bytes = AlbumUtils.parseAlbumByte(url);
 
             if (isMusic != 0){
-                song.setId(id);
+                song.setMusicId(id);
                 song.setAlbum(album);
                 song.setArtist(artist);
                 song.setDuration(duration);
@@ -146,11 +222,9 @@ public class MainActivity extends BaseActivity{
                 song.setImage("");
                 song.setImgBytes(bytes);
                 songs.add(song);
-                i++;
             }
         }
-        //设置playing list
-        mediaPlayer.setPlayList(songs);
+        cursor.close();
         return songs;
     }
 
@@ -164,8 +238,6 @@ public class MainActivity extends BaseActivity{
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        //暂时在这里关闭service
-        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent("ACTION_STOP_SERVICE"));
     }
 
     private void setToolbar() {

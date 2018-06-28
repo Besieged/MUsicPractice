@@ -66,6 +66,8 @@ public class DiscView extends RelativeLayout {
 
     private IPlayInfo mIPlayInfo;
 
+    private boolean isUserSlide = true;
+
     private int mScreenWidth, mScreenHeight;
 
     /*唱针当前所处的状态*/
@@ -161,6 +163,12 @@ public class DiscView extends RelativeLayout {
                 notifyMusicInfoChanged(position);
                 //更新playing页面 ui
 //                notifyMusicStatusChanged(MusicChangedStatus.PLAY,position);
+
+                if (isUserSlide){
+                    notifyMusicStatusChanged(MusicChangedStatus.PLAY,position);
+                }
+
+                isUserSlide = true;
 
                 currentItem = position;
             }
@@ -460,11 +468,11 @@ public class DiscView extends RelativeLayout {
         /**
          * 动画可能执行多次，只有音乐处于停止 / 暂停状态时，才执行暂停命令
          * */
-        if (musicStatus == MusicStatus.STOP) {
-            notifyMusicStatusChanged(MusicChangedStatus.STOP,INDEX_NULL);
-        }else if (musicStatus == MusicStatus.PAUSE) {
-            notifyMusicStatusChanged(MusicChangedStatus.PAUSE,INDEX_NULL);
-        }
+//        if (musicStatus == MusicStatus.STOP) {
+//            notifyMusicStatusChanged(MusicChangedStatus.STOP,INDEX_NULL);
+//        }else if (musicStatus == MusicStatus.PAUSE) {
+//            notifyMusicStatusChanged(MusicChangedStatus.PAUSE,INDEX_NULL);
+//        }
     }
 
     /*播放唱盘动画*/
@@ -476,9 +484,9 @@ public class DiscView extends RelativeLayout {
         } else {
             objectAnimator.start();
         }
-        if (musicStatus != MusicStatus.PLAY) {
-            notifyMusicStatusChanged(MusicChangedStatus.PLAY,mVpContain.getCurrentItem());
-        }
+//        if (musicStatus != MusicStatus.PLAY) {
+//            notifyMusicStatusChanged(MusicChangedStatus.PLAY,mVpContain.getCurrentItem());
+//        }
     }
 
     /*暂停唱盘动画*/
@@ -542,8 +550,9 @@ public class DiscView extends RelativeLayout {
 //            notifyMusicPicChanged(postion);
 //            notifyMusicInfoChanged(postion);
 //        } else {
-            selectMusicWithButton();
-            mVpContain.setCurrentItem(postion, true);
+        selectMusicWithButton();
+        isUserSlide = false;
+        mVpContain.setCurrentItem(postion, true);
 //        }
     }
 
@@ -554,8 +563,9 @@ public class DiscView extends RelativeLayout {
 //            notifyMusicPicChanged(postion);
 //            notifyMusicInfoChanged(postion);
 //        } else {
-            selectMusicWithButton();
-            mVpContain.setCurrentItem(postion, true);
+        selectMusicWithButton();
+        isUserSlide = false;
+        mVpContain.setCurrentItem(postion, true);
 //        }
     }
 
@@ -591,6 +601,7 @@ public class DiscView extends RelativeLayout {
         }
 
         mViewPagerAdapter.notifyDataSetChanged();
+        isUserSlide = false;
         mVpContain.setCurrentItem(position,false);
 
         Song musicData = mMusicDatas.get(position);
@@ -609,6 +620,7 @@ public class DiscView extends RelativeLayout {
             index ++ ;
         }
         selectMusicWithButton();
+        isUserSlide = false;
         mVpContain.setCurrentItem(index,true);
     }
 

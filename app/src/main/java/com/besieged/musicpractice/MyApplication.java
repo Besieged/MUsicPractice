@@ -9,6 +9,8 @@ import com.besieged.musicpractice.utils.LogUtils;
 import com.orhanobut.logger.AndroidLogAdapter;
 import com.orhanobut.logger.Logger;
 
+import org.litepal.LitePal;
+
 /**
  * Created with Android Studio
  * User: yuanxiaoru
@@ -29,6 +31,8 @@ public class MyApplication extends Application {
             mContext = getApplicationContext();
         }
         Logger.addLogAdapter(new AndroidLogAdapter());
+
+        LitePal.initialize(this);
 
         this.registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
             @Override

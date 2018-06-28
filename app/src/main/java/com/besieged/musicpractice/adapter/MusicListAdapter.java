@@ -67,7 +67,7 @@ public class MusicListAdapter extends BaseAdapter {
             viewHolder = (ViewHolder) convertView.getTag();
         }
 
-        viewHolder.id.setText(String.valueOf(songList.get(position).getId()));
+        viewHolder.id.setText(String.valueOf(songList.get(position).getMusicId()));
         viewHolder.title.setText(songList.get(position).getTitle());
         viewHolder.subtitle.setText(songList.get(position).getArtist());
         viewHolder.MusicIcon.setImageResource(R.drawable.ic_more_vert_gray_24dp);

@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">MUsicPractice</string>
+
+    <string name="queue_is_empty">播放列表为空</string>
 </resources>

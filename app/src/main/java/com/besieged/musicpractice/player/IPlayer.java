@@ -41,6 +41,8 @@ public interface IPlayer {
 
     void setPlayMode(int playMode);
 
+    int getPlayMode();
+
     void registerCallback(Callback callback);
 
     void unregisterCallback(Callback callback);
@@ -56,6 +58,8 @@ public interface IPlayer {
         void onSwitchNext(@Nullable Song next);
 
         void onComplete(@Nullable Song next);
+
+        void onSongChangeed(@Nullable Song next);
 
         void onPlayStatusChanged(boolean isPlaying);
     }

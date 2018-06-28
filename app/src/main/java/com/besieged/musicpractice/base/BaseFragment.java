@@ -5,13 +5,11 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 
-import com.besieged.musicpractice.ui.MusicStateListener;
-
 
 /**
  * Created by wm on 2016/3/17.
  */
-public class BaseFragment extends Fragment implements MusicStateListener {
+public class BaseFragment extends Fragment {
 
     public Activity mContext;
 
@@ -30,14 +28,13 @@ public class BaseFragment extends Fragment implements MusicStateListener {
     @Override
     public void onResume() {
         super.onResume();
-        ((BaseActivity) getActivity()).setMusicStateListenerListener(this);
-        reloadAdapter();
+//        ((BaseActivity) getActivity()).setMusicStateListenerListener(this);
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        ((BaseActivity) getActivity()).removeMusicStateListenerListener(this);
+//        ((BaseActivity) getActivity()).removeMusicStateListenerListener(this);
     }
 
     @Override
@@ -45,21 +42,4 @@ public class BaseFragment extends Fragment implements MusicStateListener {
         super.onDestroy();
 
     }
-
-    @Override
-    public void updateTrackInfo() {
-
-    }
-
-    @Override
-    public void updateTime() {
-
-    }
-
-    @Override
-    public void reloadAdapter() {
-
-    }
-
-
 }

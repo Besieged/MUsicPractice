@@ -24,7 +24,16 @@
 
         <activity android:name=".ui.MusicPlayerActivity"/>
 
-        <service android:name=".service.MusicService" android:enabled="true" android:exported="false"/>
+        <service android:name=".service.MusicService"
+                 android:enabled="true"
+                 android:exported="false">
+            <intent-filter>
+                <action android:name="ACTION_PLAY_TOGGLE" />
+                <action android:name="ACTION_PLAY_LAST" />
+                <action android:name="ACTION_PLAY_NEXT" />
+                <action android:name="ACTION_STOP_SERVICE" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

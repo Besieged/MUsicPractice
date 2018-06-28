@@ -43,6 +43,10 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
+import static com.besieged.musicpractice.player.MusicPlayer.MUSIC_MODE_LIST_LOOP;
+import static com.besieged.musicpractice.player.MusicPlayer.MUSIC_MODE_RANDOM_PLAY;
+import static com.besieged.musicpractice.player.MusicPlayer.MUSIC_MODE_SINGLE_LOOP;
+
 /**
  * Created with Android Studio
  * User: yuanxiaoru
@@ -133,11 +137,11 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
     @Override
     public void onMusicChanged(DiscView.MusicChangedStatus musicChangedStatus,int index) {
         switch (musicChangedStatus) {
-//            case PLAY:{
-//                mCurrentMusicIndex = index;
-//                startUpdateSeekBarProgress();
-//                break;
-//            }
+            case PLAY:{
+                mCurrentMusicIndex = index;
+                musicPlayer.play(musicPlayer.getSongList(),index);
+                break;
+            }
 //            case PAUSE:{
 //                pauseUI();
 //                break;
@@ -227,9 +231,9 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
         mCurrentMusicIndex = this.getIntent().getIntExtra("position", 0);
         mMusicDatas = musicPlayer.getSongList();
 
-        Intent intent = new Intent(this, MusicService.class);
-        intent.putExtra(PARAM_MUSIC_POSITION, mCurrentMusicIndex);
-        startService(intent);
+//        Intent intent = new Intent(this, MusicService.class);
+//        intent.putExtra(PARAM_MUSIC_POSITION, mCurrentMusicIndex);
+//        startService(intent);
     }
 
     @Override
@@ -267,7 +271,9 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
             @Override
             public void run() {
                 mDisc.setMusicDataList(mMusicDatas,mCurrentMusicIndex);
-                play();
+                onSongUpdated(mMusicDatas.get(mCurrentMusicIndex));
+                onPlayStatusChanged(true);
+//                play();
             }
         },200);
     }
@@ -385,21 +391,17 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
     }
     private void play(){
         musicPlayer.play(musicPlayer.getSongList(),mCurrentMusicIndex);
-//        mDisc.switchSong(musicPlayer.getPlayingSong());
     }
     //下一首
     private void next(){
         musicPlayer.playNext();
-//        mDisc.next(mPlayer.getmCurrentMusicIndex());
     }
     //上一首
     private void last(){
         musicPlayer.playLast();
-//        mDisc.last(mPlayer.getmCurrentMusicIndex());
     }
     //暂停或者开始播放
     private void playOrPause(){
-//        mDisc.playOrPause();
         musicPlayer.playOrPause();
     }
 
@@ -409,23 +411,37 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
     private void changePlayMode() {
         int index = 0;
         switch (playMode) {
-            case 0:
+            case MUSIC_MODE_LIST_LOOP:
                 ivPlayMode.setImageResource(R.drawable.ic_play_mode_shuffle);
-                playMode = 2;
+                playMode = MUSIC_MODE_RANDOM_PLAY;
                 index = playMode;
                 break;
-            case 1:
+            case MUSIC_MODE_SINGLE_LOOP:
                 ivPlayMode.setImageResource(R.drawable.ic_play_mode_loop);
-                playMode = 0;
+                playMode = MUSIC_MODE_LIST_LOOP;
                 index = playMode;
                 break;
-            case 2:
+            case MUSIC_MODE_RANDOM_PLAY:
                 ivPlayMode.setImageResource(R.drawable.ic_play_mode_single);
-                playMode = 1;
+                playMode = MUSIC_MODE_SINGLE_LOOP;
                 index = playMode;
                 break;
         }
         musicPlayer.setPlayMode(index);
+    }
+    private void setPlayModeView(int mode) {
+        playMode = mode;
+        switch (mode) {
+            case MUSIC_MODE_LIST_LOOP:
+                ivPlayMode.setImageResource(R.drawable.ic_play_mode_loop);
+                break;
+            case MUSIC_MODE_SINGLE_LOOP:
+                ivPlayMode.setImageResource(R.drawable.ic_play_mode_single);
+                break;
+            case MUSIC_MODE_RANDOM_PLAY:
+                ivPlayMode.setImageResource(R.drawable.ic_play_mode_shuffle);
+                break;
+        }
     }
 
     private Drawable getForegroundDrawable(int musicPicRes) {
@@ -520,6 +536,11 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
         changeDisc(next);
     }
 
+    @Override
+    public void onSongChangeed(@Nullable Song next) {
+
+    }
+
     private void changeDisc(Song song){
         mDisc.switchSong(song);
     }
@@ -559,6 +580,7 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
             tvTotalTime.setText(duration2Time(totalDuration));
             tvCurrentTime.setText(duration2Time(progress));
         }
+        setPlayModeView(musicPlayer.getPlayMode());
     }
 
     /**
@@ -609,21 +631,12 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
         super.onDestroy();
         if (mIsServiceBound){
             mContext.unbindService(mConnection);
+            if (mPlayer!=null){
+                mPlayer.unregisterCallback(MusicPlayerActivity.this);
+            }
             mIsServiceBound = false;
         }
         //LocalBroadcastManager.getInstance(mContext).unregisterReceiver(musicReceiver);
-    }
-
-    private void pauseUI() {
-        stopUpdateSeekBarProgree();
-    }
-
-    private void stop() {
-        stopUpdateSeekBarProgree();
-        ivPlayOrPause.setImageResource(R.drawable.ic_play);
-        tvCurrentTime.setText(duration2Time(0));
-        tvTotalTime.setText(duration2Time(0));
-        seekBar.setProgress(0);
     }
 
     private void resetUI() {

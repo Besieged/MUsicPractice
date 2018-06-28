@@ -1,5 +1,7 @@
 package com.besieged.musicpractice.model;
 
+import org.litepal.crud.DataSupport;
+
 import java.io.Serializable;
 
 /**
@@ -8,8 +10,9 @@ import java.io.Serializable;
  * Date: 2018/5/18.
  */
 
-public class Song implements Serializable{
-    private long id;
+public class Song extends DataSupport implements Serializable{
+
+    private long musicId;
 
     private String name;//名字
 
@@ -32,8 +35,8 @@ public class Song implements Serializable{
     public Song() {
     }
 
-    public Song(long id, String name, String title, String artist, String url, long duration, long size, String album, String image, byte[] imgBytes) {
-        this.id = id;
+    public Song(long musicId, String name, String title, String artist, String url, long duration, long size, String album, String image, byte[] imgBytes) {
+        this.musicId = musicId;
         this.name = name;
         this.title = title;
         this.artist = artist;
@@ -45,12 +48,12 @@ public class Song implements Serializable{
         this.imgBytes = imgBytes;
     }
 
-    public long getId() {
-        return id;
+    public long getMusicId() {
+        return musicId;
     }
 
-    public void setId(long id) {
-        this.id = id;
+    public void setMusicId(long musicId) {
+        this.musicId = musicId;
     }
 
     public String getName() {

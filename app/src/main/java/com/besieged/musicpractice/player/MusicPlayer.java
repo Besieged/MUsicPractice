@@ -71,71 +71,6 @@ public class MusicPlayer implements IPlayer, MediaPlayer.OnCompletionListener{
         return sInstance;
     }
 
-
-//    public void playOrPause(){
-//        if (isPlaying()){
-//            pause();
-//        }else {
-//            play();
-//        }
-//    }
-//
-//    public void play(){
-//        isPlaying = true;
-//        Intent i = new Intent(ACTION_OPT_MUSIC_PLAY);
-//        optMusic(i);
-//    }
-//
-//
-//    public void play(int index){
-//        isPlaying = true;
-//        Intent i = new Intent(ACTION_OPT_MUSIC_PLAY);
-//        i.putExtra(PARAM_MUSIC_INDEX,index);
-//        optMusic(i);
-//    }
-//
-//    public void next(){
-//        isPlaying = true;
-//        Intent i = new Intent(ACTION_OPT_MUSIC_NEXT);
-//        optMusic(i);
-//    }
-//
-//    public void last(){
-//        isPlaying = true;
-//        Intent i = new Intent(ACTION_OPT_MUSIC_LAST);
-//        optMusic(i);
-//    }
-//
-//    public void seekTo(int position){
-//        Intent intent = new Intent(ACTION_OPT_MUSIC_SEEK_TO);
-//        intent.putExtra(PARAM_MUSIC_SEEK_TO, position);
-//        broadcastManager.sendBroadcast(intent);
-//    }
-//
-//    public boolean isPlaying(){
-//        return isPlaying;
-//    }
-//
-//
-//
-//    public void pause(){
-//        isPlaying = false;
-//        Intent intent = new Intent(ACTION_OPT_MUSIC_PAUSE);
-//        optMusic(intent);
-//    }
-//
-//    public void stop(){
-//        isPlaying = false;
-//        Intent intent = new Intent(ACTION_OPT_MUSIC_PAUSE);
-//        optMusic(intent);
-//    }
-
-//    public void changeMode(int index){
-//        Intent intent = new Intent(ACTION_OPT_MUSIC_MODE_UPDATE);
-//        intent.putExtra(PARAM_MUSIC_MODE, index);
-//        optMusic(intent);
-//    }
-
     public List<Song> getSongList() {
         return songList;
     }
@@ -208,6 +143,7 @@ public class MusicPlayer implements IPlayer, MediaPlayer.OnCompletionListener{
                 mPlayer.setDataSource(song.getUrl());
                 mPlayer.prepare();
                 mPlayer.start();
+                notifySongChanged(song);
                 notifyPlayStatusChanged(true);
             } catch (IOException e) {
                 Log.e(TAG, "play: ", e);
@@ -249,18 +185,54 @@ public class MusicPlayer implements IPlayer, MediaPlayer.OnCompletionListener{
     public boolean playLast() {
         isPaused = false;
 
-        mCurrentMusicIndex -= 1;
+        mCurrentMusicIndex = getLastIndex();
         Song last = songList.get(mCurrentMusicIndex);
         play();
         notifyPlayLast(last);
         return true;
     }
 
+    private int getLastIndex(){
+        int size = getSongList().size();
+        int index = mCurrentMusicIndex;
+        if (musicPlayMode == MUSIC_MODE_SINGLE_LOOP){
+
+        }else if (musicPlayMode == MUSIC_MODE_RANDOM_PLAY){
+            Random random = new Random();
+            index = random.nextInt(size);
+        }else{
+            if (index-1 < 0){
+                index = size-1;
+            }else{
+                index = index-1;
+            }
+        }
+        return index;
+    }
+
+    private int getNextIndex(){
+        int size = getSongList().size();
+        int index = mCurrentMusicIndex;
+        if (musicPlayMode == MUSIC_MODE_SINGLE_LOOP){
+
+        }else if (musicPlayMode == MUSIC_MODE_RANDOM_PLAY){
+            Random random = new Random();
+            index = random.nextInt(size);
+        }else{
+            if (index+1 > size){
+                index = 0;
+            }else{
+                index = index+1;
+            }
+        }
+        return index;
+    }
+
     @Override
     public boolean playNext() {
         isPaused = false;
 
-        mCurrentMusicIndex += 1;
+        mCurrentMusicIndex = getNextIndex();
         Song next = songList.get(mCurrentMusicIndex);
         play();
         notifyPlayNext(next);
@@ -295,6 +267,11 @@ public class MusicPlayer implements IPlayer, MediaPlayer.OnCompletionListener{
     }
 
     @Override
+    public int getPlayMode() {
+        return musicPlayMode;
+    }
+
+    @Override
     public void registerCallback(Callback callback) {
         mCallbacks.add(callback);
     }
@@ -307,6 +284,11 @@ public class MusicPlayer implements IPlayer, MediaPlayer.OnCompletionListener{
     private void notifyPlayStatusChanged(boolean isPlaying) {
         for (Callback callback : mCallbacks) {
             callback.onPlayStatusChanged(isPlaying);
+        }
+    }
+    private void notifySongChanged(Song song) {
+        for (Callback callback : mCallbacks) {
+            callback.onSongChangeed(song);
         }
     }
 
