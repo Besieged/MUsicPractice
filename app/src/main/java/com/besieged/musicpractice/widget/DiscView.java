@@ -93,6 +93,7 @@ public class DiscView extends RelativeLayout {
     }
 
     public interface IPlayInfo {
+        void onDiscClick(View view);
         /*用于更新标题栏变化*/
         void onMusicInfoChanged(String musicName, String musicAuthor);
         /*用于更新背景图片*/
@@ -661,7 +662,7 @@ public class DiscView extends RelativeLayout {
                 disc.setOnClickListener(new OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        mNeedleAnimator.reverse();
+                        mIPlayInfo.onDiscClick(v);
                     }
                 });
 

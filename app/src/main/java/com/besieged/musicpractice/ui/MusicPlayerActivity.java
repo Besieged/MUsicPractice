@@ -14,7 +14,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
-import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
@@ -26,6 +25,9 @@ import android.widget.TextView;
 
 import com.besieged.musicpractice.R;
 import com.besieged.musicpractice.base.BaseActivity;
+import com.besieged.musicpractice.lrc.DefaultLrcParser;
+import com.besieged.musicpractice.lrc.LrcRow;
+import com.besieged.musicpractice.lrc.LrcView;
 import com.besieged.musicpractice.model.Song;
 import com.besieged.musicpractice.player.IPlayer;
 import com.besieged.musicpractice.player.MusicPlayer;
@@ -37,6 +39,12 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,6 +54,7 @@ import butterknife.ButterKnife;
 import static com.besieged.musicpractice.player.MusicPlayer.MUSIC_MODE_LIST_LOOP;
 import static com.besieged.musicpractice.player.MusicPlayer.MUSIC_MODE_RANDOM_PLAY;
 import static com.besieged.musicpractice.player.MusicPlayer.MUSIC_MODE_SINGLE_LOOP;
+import static com.besieged.musicpractice.utils.Constant.lrcPath;
 
 /**
  * Created with Android Studio
@@ -53,7 +62,7 @@ import static com.besieged.musicpractice.player.MusicPlayer.MUSIC_MODE_SINGLE_LO
  * Date: 2018/5/18.
  */
 
-public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callback,DiscView.IPlayInfo, View.OnClickListener {
+public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callback, DiscView.IPlayInfo, View.OnClickListener {
 
     @BindView(R.id.rootLay)
     RelativeLayout rootLay;
@@ -84,10 +93,17 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
     public static final String PARAM_MUSIC_LIST = "PARAM_MUSIC_LIST";
     public static final String PARAM_MUSIC_POSITION = "PARAM_MUSIC_POSITION";
     public static final int DURATION_NEEDLE_ANIAMTOR = 500;
-//    @BindView(R.id.discview)
+    //    @BindView(R.id.discview)
     DiscView mDisc;
 
     MusicPlayer musicPlayer;
+    @BindView(R.id.lrc)
+    LrcView lrc;
+    @BindView(R.id.lrcLin)
+    RelativeLayout lrcLin;
+    @BindView(R.id.discRel)
+    RelativeLayout discRel;
+
     private MusicService mMusicService;
     boolean mIsServiceBound = false;
     //是否初始化页面UI
@@ -119,6 +135,14 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
     };
 
     @Override
+    public void onDiscClick(View view) {
+        if (discRel.getVisibility() == View.VISIBLE) {
+            discRel.setVisibility(View.INVISIBLE);
+            lrcLin.setVisibility(View.VISIBLE);
+        }
+    }
+
+    @Override
     public void onMusicInfoChanged(String musicName, String musicAuthor) {
         getSupportActionBar().setTitle(musicName);
         getSupportActionBar().setSubtitle(musicAuthor);
@@ -135,25 +159,25 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
     }
 
     @Override
-    public void onMusicChanged(DiscView.MusicChangedStatus musicChangedStatus,int index) {
+    public void onMusicChanged(DiscView.MusicChangedStatus musicChangedStatus, int index) {
         switch (musicChangedStatus) {
-            case PLAY:{
+            case PLAY: {
                 mCurrentMusicIndex = index;
-                musicPlayer.play(musicPlayer.getSongList(),index);
+                musicPlayer.play(musicPlayer.getSongList(), index);
                 break;
             }
-//            case PAUSE:{
-//                pauseUI();
-//                break;
-//            }
-//            case NEXT:{
-//                resetUI();
-//                break;
-//            }
-//            case STOP:{
-//                stop();
-//                break;
-//            }
+            //            case PAUSE:{
+            //                pauseUI();
+            //                break;
+            //            }
+            //            case NEXT:{
+            //                resetUI();
+            //                break;
+            //            }
+            //            case STOP:{
+            //                stop();
+            //                break;
+            //            }
         }
     }
 
@@ -166,21 +190,7 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
 
     private Handler mHandler = new Handler();
 
-    private Handler handler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
-            switch (msg.what) {
-                case 0:
-                    seekBar.setProgress(seekBar.getProgress() + 1000);
-                    tvCurrentTime.setText(duration2Time(seekBar.getProgress()));
-                    startUpdateSeekBarProgress();
-                    break;
-                default:
-                    break;
-            }
-        }
-    };
+    private Handler handler = new Handler();
 
     private Runnable mProgressCallback = new Runnable() {
         @Override
@@ -194,6 +204,7 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
                 } else {
                     seekBar.setProgress(progress);
                 }
+                lrc.seekTo(progress, true, false);
                 mHandler.postDelayed(this, 1000);
             }
         }
@@ -201,7 +212,7 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
 
     @Override
     protected void showQuickControl(boolean show) {
-//        super.showQuickControl(show);
+        //        super.showQuickControl(show);
     }
 
     @Override
@@ -222,7 +233,7 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
 
         initMusicDatas();
         initView();
-//        initBroadCastReceiver();
+        //        initBroadCastReceiver();
         mContext.bindService(new Intent(mContext, MusicService.class), mConnection, Context.BIND_AUTO_CREATE);
         mIsServiceBound = true;
     }
@@ -231,9 +242,9 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
         mCurrentMusicIndex = this.getIntent().getIntExtra("position", 0);
         mMusicDatas = musicPlayer.getSongList();
 
-//        Intent intent = new Intent(this, MusicService.class);
-//        intent.putExtra(PARAM_MUSIC_POSITION, mCurrentMusicIndex);
-//        startService(intent);
+        //        Intent intent = new Intent(this, MusicService.class);
+        //        intent.putExtra(PARAM_MUSIC_POSITION, mCurrentMusicIndex);
+        //        startService(intent);
     }
 
     @Override
@@ -263,28 +274,78 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
                 musicPlayer.seekTo(seekBar.getProgress());
+                lrc.seekTo(seekBar.getProgress(), true, true);
                 startUpdateSeekBarProgress();
             }
         });
+
+        discRel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (discRel.getVisibility() == View.VISIBLE) {
+                    discRel.setVisibility(View.INVISIBLE);
+                    lrcLin.setVisibility(View.VISIBLE);
+                }
+            }
+        });
+        lrc.setOnSeekToListener(onSeekToListener);
+        lrc.setOnLrcClickListener(onLrcClickListener);
+        lrcLin.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (lrcLin.getVisibility() == View.VISIBLE) {
+                    lrcLin.setVisibility(View.INVISIBLE);
+                    discRel.setVisibility(View.VISIBLE);
+                }
+            }
+        });
+
         //延迟200毫秒开始填充数据，播放音乐
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                mDisc.setMusicDataList(mMusicDatas,mCurrentMusicIndex);
+                mDisc.setMusicDataList(mMusicDatas, mCurrentMusicIndex);
                 onSongUpdated(mMusicDatas.get(mCurrentMusicIndex));
                 onPlayStatusChanged(true);
-//                play();
+                setLRC();
             }
-        },200);
+        }, 200);
     }
 
+    private void setLRC(){
+        // TODO: 2018/6/29 解析不同的歌词文件 
+        List<LrcRow> list = getLrcRows(lrcPath+"阿婆说.lrc");
+        if (list != null && list.size() > 0) {
+            lrc.setLrcRows(list);
+        } else {
+            lrc.reset();
+        }
+    }
+    LrcView.OnLrcClickListener onLrcClickListener = new LrcView.OnLrcClickListener() {
+
+        @Override
+        public void onClick() {
+
+            if (lrcLin.getVisibility() == View.VISIBLE) {
+                lrcLin.setVisibility(View.INVISIBLE);
+                discRel.setVisibility(View.VISIBLE);
+            }
+        }
+    };
+    LrcView.OnSeekToListener onSeekToListener = new LrcView.OnSeekToListener() {
+
+        @Override
+        public void onSeekTo(int progress) {
+            musicPlayer.seekTo(progress);
+        }
+    };
     private void try2UpdateMusicPicBackground(final String musicPicRes) {
 
         /*得到屏幕的宽高比，以便按比例切割图片一部分*/
         final float widthHeightSize = (float) (DisplayUtil.getScreenWidth(MusicPlayerActivity.this)
                 * 1.0 / DisplayUtil.getScreenHeight(this) * 1.0);
 
-        if (musicPicRes==null){
+        if (musicPicRes == null) {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -298,7 +359,7 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
                 }
             }).start();
 
-        }else{
+        } else {
             Glide.with(mContext)
                     .load(musicPicRes)
                     .asBitmap()
@@ -326,13 +387,14 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
                     });
         }
     }
+
     private void try2UpdateMusicPicBackground(byte[] bytes) {
 
         /*得到屏幕的宽高比，以便按比例切割图片一部分*/
         final float widthHeightSize = (float) (DisplayUtil.getScreenWidth(MusicPlayerActivity.this)
                 * 1.0 / DisplayUtil.getScreenHeight(this) * 1.0);
 
-        if (bytes==null){
+        if (bytes == null) {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -346,7 +408,7 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
                 }
             }).start();
 
-        }else{
+        } else {
             Glide.with(mContext)
                     .load(bytes)
                     .asBitmap()
@@ -389,19 +451,23 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
             addMusicToLike();
         }
     }
-    private void play(){
-        musicPlayer.play(musicPlayer.getSongList(),mCurrentMusicIndex);
+
+    private void play() {
+        musicPlayer.play(musicPlayer.getSongList(), mCurrentMusicIndex);
     }
+
     //下一首
-    private void next(){
+    private void next() {
         musicPlayer.playNext();
     }
+
     //上一首
-    private void last(){
+    private void last() {
         musicPlayer.playLast();
     }
+
     //暂停或者开始播放
-    private void playOrPause(){
+    private void playOrPause() {
         musicPlayer.playOrPause();
     }
 
@@ -429,6 +495,7 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
         }
         musicPlayer.setPlayMode(index);
     }
+
     private void setPlayModeView(int mode) {
         playMode = mode;
         switch (mode) {
@@ -468,6 +535,7 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
         foregroundDrawable.setColorFilter(Color.GRAY, PorterDuff.Mode.MULTIPLY);
         return foregroundDrawable;
     }
+
     private Bitmap getForegroundBitmap(int musicPicRes) {
         int screenWidth = DisplayUtil.getScreenWidth(this);
         int screenHeight = DisplayUtil.getScreenHeight(this);
@@ -541,38 +609,41 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
 
     }
 
-    private void changeDisc(Song song){
+    private void changeDisc(Song song) {
         mDisc.switchSong(song);
     }
+
     /**
      * 音乐播放状态改变监听
+     *
      * @param isPlaying
      */
     @Override
     public void onPlayStatusChanged(boolean isPlaying) {
         ivPlayOrPause.setImageResource(isPlaying ? R.drawable.ic_pause : R.drawable.ic_play);
-        if (isInitUI){//初始化更新UI
+        if (isInitUI) {//初始化更新UI
             isInitUI = false;
             updateMusicInfo();
         }
-        if (!isPlaying){
+        if (!isPlaying) {
             stopUpdateSeekBarProgree();
             mDisc.pause();
-        }else {
+        } else {
             startUpdateSeekBarProgress();
             mDisc.play();
         }
     }
+
     //更新UI信息，包括seekbar进度，事件等。
-    private void updateMusicInfo(){
-        if (musicPlayer.isPlaying()){
+    private void updateMusicInfo() {
+        if (musicPlayer.isPlaying()) {
             int progress = musicPlayer.getProgress();
             int totalDuration = (int) musicPlayer.getPlayingSong().getDuration();
             seekBar.setProgress(progress);
             seekBar.setMax(totalDuration);
             tvTotalTime.setText(duration2Time(totalDuration));
             tvCurrentTime.setText(duration2Time(progress));
-        }else {
+        } else {
             int progress = 0;
             int totalDuration = (int) musicPlayer.getPlayingSong().getDuration();
             seekBar.setProgress(progress);
@@ -582,18 +653,45 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
         }
         setPlayModeView(musicPlayer.getPlayMode());
     }
+    private List<LrcRow> getLrcRows(String filePath) {
+
+        List<LrcRow> rows = null;
+        InputStream is = null;
+        try {
+            is = new FileInputStream(filePath);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } finally {
+            if (is == null) {
+                return null;
+            }
+        }
+        BufferedReader br = new BufferedReader(new InputStreamReader(is));
+        String line;
+        StringBuilder sb = new StringBuilder();
+        try {
+            while ((line = br.readLine()) != null) {
+                sb.append(line + "\n");
+            }
+            rows = DefaultLrcParser.getIstance().getLrcRows(sb.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return rows;
+    }
 
     /**
      * 更新UI信息
+     *
      * @param song
      */
-    private void onSongUpdated(Song song){
+    private void onSongUpdated(Song song) {
         if (song == null) {
             resetUI();
             return;
         }
         //更新seekbar，已播放时间
-        updateMusicDurationInfo((int)song.getDuration());
+        updateMusicDurationInfo((int) song.getDuration());
 
         //更新tiitle
         getSupportActionBar().setTitle(song.getTitle());
@@ -629,9 +727,9 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (mIsServiceBound){
+        if (mIsServiceBound) {
             mContext.unbindService(mConnection);
-            if (mPlayer!=null){
+            if (mPlayer != null) {
                 mPlayer.unregisterCallback(MusicPlayerActivity.this);
             }
             mIsServiceBound = false;

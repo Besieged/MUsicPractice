@@ -26,13 +26,37 @@
         android:layout_height="1.0dip"
         android:layout_below="@id/music_player_toolbar"
         android:background="@drawable/play_topbar_line" />
-    <include
-        android:id="@+id/discview"
-        layout="@layout/layout_discview"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+
+    <RelativeLayout
+        android:id="@+id/discRel"
         android:layout_above="@+id/rlMusicTime"
-        android:layout_below="@id/music_player_toolbar"/>
+        android:layout_below="@id/music_player_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <include
+            android:id="@+id/discview"
+            layout="@layout/layout_discview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            />
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/lrcLin"
+        android:layout_above="@+id/rlMusicTime"
+        android:layout_below="@id/music_player_toolbar"
+        android:visibility="invisible"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <com.besieged.musicpractice.lrc.LrcView
+            android:id="@+id/lrc"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+    </RelativeLayout>
 
     <RelativeLayout
         android:id="@+id/rlMusicTime"
