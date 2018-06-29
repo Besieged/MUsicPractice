@@ -14,8 +14,6 @@ import android.view.WindowManager;
 import com.besieged.musicpractice.R;
 import com.besieged.musicpractice.ui.fragment.QuickControlsFragment;
 
-import java.util.ArrayList;
-
 /**
  * Created with Android Studio
  * User: yuanxiaoru
@@ -25,7 +23,6 @@ import java.util.ArrayList;
 public class BaseActivity extends AppCompatActivity{
 
     public Context mContext;
-    private ArrayList<MusicStateListener> mMusicListener = new ArrayList<>();
     private QuickControlsFragment fragment; //底部播放控制栏
 
     @Override
