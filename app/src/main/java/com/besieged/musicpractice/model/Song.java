@@ -10,7 +10,11 @@ import java.io.Serializable;
 
 public class Song implements Serializable{
 
+    private long id;//自增的id
+
     private long musicId;
+
+    private long cloudMusicId;
 
     private String name;//名字
 
@@ -33,8 +37,9 @@ public class Song implements Serializable{
     public Song() {
     }
 
-    public Song(long musicId, String name, String title, String artist, String url, long duration, long size, String album, String image, byte[] imgBytes) {
+    public Song(long musicId, long cloudMusicId, String name, String title, String artist, String url, long duration, long size, String album, String image, byte[] imgBytes) {
         this.musicId = musicId;
+        this.cloudMusicId = cloudMusicId;
         this.name = name;
         this.title = title;
         this.artist = artist;
@@ -44,6 +49,22 @@ public class Song implements Serializable{
         this.album = album;
         this.image = image;
         this.imgBytes = imgBytes;
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public long getCloudMusicId() {
+        return cloudMusicId;
+    }
+
+    public void setCloudMusicId(long cloudMusicId) {
+        this.cloudMusicId = cloudMusicId;
     }
 
     public long getMusicId() {

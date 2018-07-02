@@ -17,13 +17,13 @@ public class MyDatabaseHelper extends SQLiteOpenHelper {
 
     public final static String SONG = "song";
 
-    public final static String CREATE_TABLE_SONG_SQL = "CREATE TABLE song (id integer primary key autoincrement,album text, artist text, duration integer, image text, imgbytes blob, musicid integer, name text, size integer, title text, url text);";
+    public final static String CREATE_TABLE_SONG_SQL = "CREATE TABLE song (id integer primary key autoincrement,album text, artist text, duration integer, image text, imgbytes blob, musicid integer, cloudmusicid integer, name text, size integer, title text, url text);";
 
 
     public static String DATABASE_NAME = "music";
     public static String DATABASE_PATH = Environment.getExternalStorageDirectory().getAbsolutePath() + "/musicPractice/database/"+DATABASE_NAME+".db";
     //version 数据库升级用
-    public final static int VERSION = 1;
+    public final static int VERSION = 2;
 
     private static MyDatabaseHelper sInstance;
 
@@ -51,7 +51,9 @@ public class MyDatabaseHelper extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         LogUtils.i("onUpgrade=version="+oldVersion+","+newVersion);
-
+        if (oldVersion == 1){
+            safeExecuteSql(db,"alter table song add COLUMN cloudmusicid integer");
+        }
 
     }
 

@@ -1,9 +1,11 @@
 package com.besieged.musicpractice.ui;
 
 import android.content.ComponentName;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -22,24 +24,34 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.besieged.musicpractice.R;
 import com.besieged.musicpractice.base.BaseActivity;
+import com.besieged.musicpractice.db.DBUtil;
 import com.besieged.musicpractice.lrc.DefaultLrcParser;
 import com.besieged.musicpractice.lrc.LrcRow;
 import com.besieged.musicpractice.lrc.LrcView;
+import com.besieged.musicpractice.model.Lrc;
+import com.besieged.musicpractice.model.SearchResponse;
 import com.besieged.musicpractice.model.Song;
+import com.besieged.musicpractice.net.LyricCallback;
+import com.besieged.musicpractice.net.SearchCallback;
 import com.besieged.musicpractice.player.IPlayer;
 import com.besieged.musicpractice.player.MusicPlayer;
 import com.besieged.musicpractice.service.MusicService;
 import com.besieged.musicpractice.utils.DisplayUtil;
 import com.besieged.musicpractice.utils.FastBlurUtil;
+import com.besieged.musicpractice.utils.LogUtils;
+import com.besieged.musicpractice.utils.NetUtil;
+import com.besieged.musicpractice.utils.utils;
 import com.besieged.musicpractice.widget.DiscView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -50,7 +62,9 @@ import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import okhttp3.Call;
 
+import static com.besieged.musicpractice.db.MyDatabaseHelper.SONG;
 import static com.besieged.musicpractice.player.MusicPlayer.MUSIC_MODE_LIST_LOOP;
 import static com.besieged.musicpractice.player.MusicPlayer.MUSIC_MODE_RANDOM_PLAY;
 import static com.besieged.musicpractice.player.MusicPlayer.MUSIC_MODE_SINGLE_LOOP;
@@ -307,14 +321,107 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
                 mDisc.setMusicDataList(mMusicDatas, mCurrentMusicIndex);
                 onSongUpdated(mMusicDatas.get(mCurrentMusicIndex));
                 onPlayStatusChanged(true);
-                setLRC();
+                getLrc(mMusicDatas.get(mCurrentMusicIndex));
             }
         }, 200);
     }
+    private void getLrc(final Song song){
+        final String cloudid = song.getCloudMusicId()+"";
+        final long songid = song.getId();
+        if (cloudid.equals("0")){
+            NetUtil.post_getMusicInfo(song.getName(), new SearchCallback() {
+                @Override
+                public void onError(Call call, Exception e, int id) {
+                    e.printStackTrace();
+                    LogUtils.e(e.getMessage());
+                }
 
-    private void setLRC(){
+                @Override
+                public void onResponse(SearchResponse response, int id) {
+                    if (response.getCode() == 200){
+                        List<SearchResponse.ResultBean.SongsBean> songsBeans = response.getResult().getSongs();
+                        if (songsBeans.size()>0){
+                            int cloudid_new = songsBeans.get(0).getId();
+
+                            final String path2 = lrcPath+cloudid_new+".lrc";
+
+                            //保存到本地数据库
+                            SQLiteDatabase db = DBUtil.getDatabase();
+                            ContentValues c = new ContentValues();
+                            c.put("cloudmusicid",cloudid_new);
+                            try {
+                                DBUtil.update(db,SONG,c,"id = '" + String.valueOf(songid) + "'",null);
+                            } finally {
+                                db.close();
+                            }
+                            //更新list中数据id
+                            song.setCloudMusicId(cloudid_new);
+                            //获取歌词
+                            NetUtil.get_getLyric(String.valueOf(cloudid_new), new LyricCallback() {
+                                @Override
+                                public void onError(Call call, Exception e, int id) {
+                                    e.printStackTrace();
+                                    LogUtils.e(e.getMessage());
+                                }
+
+                                @Override
+                                public void onResponse(Lrc response, int id) {
+                                    if (response.getCode() == 200){
+                                        String text = response.getLrc().getLyric();
+
+                                        utils.saveLyc(path2,text);
+
+                                        setLRC(path2);
+                                    }else {
+                                        Toast.makeText(MusicPlayerActivity.this,"获取歌词信息失败",Toast.LENGTH_SHORT).show();
+                                    }
+                                }
+                            });
+
+                        }else{
+                            Toast.makeText(MusicPlayerActivity.this,"获取歌词信息失败",Toast.LENGTH_SHORT).show();
+                        }
+                    }else {
+                        Toast.makeText(MusicPlayerActivity.this,"获取歌词信息失败",Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+        }else {
+            final String path = lrcPath+cloudid+".lrc";
+            File f = new File(path);
+            if (!f.exists()){
+                NetUtil.get_getLyric(cloudid, new LyricCallback() {
+                    @Override
+                    public void onError(Call call, Exception e, int id) {
+                        e.printStackTrace();
+                        LogUtils.e(e.getMessage());
+                    }
+
+                    @Override
+                    public void onResponse(Lrc response, int id) {
+                        if (response.getCode() == 200){
+                            String text = response.getLrc().getLyric();
+
+                            utils.saveLyc(path,text);
+
+                            setLRC(path);
+                        }else {
+                            Toast.makeText(MusicPlayerActivity.this,"获取歌词信息失败",Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+                return;
+            }
+            setLRC(path);
+        }
+    }
+
+    private void setLRC(String path){
+        if (path == null){
+            return;
+        }
         // TODO: 2018/6/29 解析不同的歌词文件 
-        List<LrcRow> list = getLrcRows(lrcPath+"阿婆说.lrc");
+        List<LrcRow> list = getLrcRows(path);
         if (list != null && list.size() > 0) {
             lrc.setLrcRows(list);
         } else {
@@ -696,6 +803,9 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
         //更新tiitle
         getSupportActionBar().setTitle(song.getTitle());
         getSupportActionBar().setSubtitle(song.getArtist());
+
+        //获取歌词
+        getLrc(song);
 
         //更新背景图
         try2UpdateMusicPicBackground(song.getImgBytes());

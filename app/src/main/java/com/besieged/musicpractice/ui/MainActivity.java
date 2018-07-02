@@ -139,7 +139,9 @@ public class MainActivity extends BaseActivity{
         Cursor cursor = DBUtil.queryAll(db,"song");
         while (cursor.moveToNext()){
             Song song = new Song();
-            long id = cursor.getLong(cursor.getColumnIndex("musicid"));
+            long id = cursor.getLong(cursor.getColumnIndex("id"));
+            long cloudMusicId = cursor.getLong(cursor.getColumnIndex("cloudmusicid"));
+            long musicid = cursor.getLong(cursor.getColumnIndex("musicid"));
             String title = cursor.getString(cursor.getColumnIndex("title"));
             String name = cursor.getString(cursor.getColumnIndex("name"));
             String artist  = cursor.getString(cursor.getColumnIndex("artist"));
@@ -149,7 +151,9 @@ public class MainActivity extends BaseActivity{
             String album = cursor.getString(cursor.getColumnIndex("album"));
             byte[] bytes = cursor.getBlob(cursor.getColumnIndex("imgbytes"));
 
-            song.setMusicId(id);
+            song.setId(id);
+            song.setMusicId(musicid);
+            song.setCloudMusicId(cloudMusicId);//网易云音乐歌曲id
             song.setAlbum(album);
             song.setArtist(artist);
             song.setDuration(duration);
@@ -182,6 +186,7 @@ public class MainActivity extends BaseActivity{
             cv.put("image",song.getImage());
             cv.put("imgbytes",song.getImgBytes());
             cv.put("musicid",song.getMusicId());
+            cv.put("cloudmusicid",song.getCloudMusicId());
             cv.put("name",song.getName());
             cv.put("size",song.getSize());
             cv.put("title",song.getTitle());
@@ -212,6 +217,7 @@ public class MainActivity extends BaseActivity{
 
             if (isMusic != 0){
                 song.setMusicId(id);
+                song.setCloudMusicId(0);//网易云音乐歌曲id,默认是0
                 song.setAlbum(album);
                 song.setArtist(artist);
                 song.setDuration(duration);

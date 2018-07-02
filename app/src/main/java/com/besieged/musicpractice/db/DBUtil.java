@@ -50,4 +50,12 @@ public class DBUtil {
         return cur;
     }
 
+    //返回其他值数据库更新失败
+    public static final synchronized int update(SQLiteDatabase db, String table, ContentValues values, String whereClause, String[] whereArgs){
+        while(db.isDbLockedByOtherThreads())
+            ;
+        int ret = db.update(table, values, whereClause, whereArgs);
+        return ret;
+    }
+
 }
