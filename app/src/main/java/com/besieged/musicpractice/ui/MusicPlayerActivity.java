@@ -420,7 +420,6 @@ public class MusicPlayerActivity extends BaseActivity implements IPlayer.Callbac
         if (path == null){
             return;
         }
-        // TODO: 2018/6/29 解析不同的歌词文件 
         List<LrcRow> list = getLrcRows(path);
         if (list != null && list.size() > 0) {
             lrc.setLrcRows(list);

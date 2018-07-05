@@ -110,7 +110,7 @@ public class LrcView extends View implements ILrcView {
     /**
      * 歌词间默认的行距
      **/
-    private static final float DEFAULT_PADDING = SizeUtils.dp2px(17);
+    private static final float DEFAULT_PADDING = SizeUtils.dp2px(22);
     /**
      * 歌词当前的行距
      **/
@@ -224,7 +224,7 @@ public class LrcView extends View implements ILrcView {
         //两行歌词间字体颜色变化的透明度
         int alpha = (0xFF - 0x11) / count;
         //画出来的第一行歌词的y坐标
-        float rowY = getHeight() / 2 + minRaw * (mCurSizeForOtherLrc + mCurPadding);
+        float rowY = getHeight() * 5 / 12 + minRaw * (mCurSizeForOtherLrc + mCurPadding);
         for (int i = minRaw; i <= maxRaw; i++) {
 
             if (i == mCurRow) {//画高亮歌词
@@ -266,7 +266,7 @@ public class LrcView extends View implements ILrcView {
 
         //画时间线和时间
         if (mIsDrawTimeLine) {
-            float y = getHeight() / 2 + getScrollY();
+            float y = getHeight() * 5 / 12 + getScrollY();
             float x = getWidth();
             canvas.drawBitmap(arrowBitmap, -20, y - 41, null);
             canvas.drawText(mLrcRows.get(mCurRow).getTimeStr().substring(0, 5), x - 105, y + 13, mPaintForTimeLine);
@@ -464,7 +464,6 @@ public class LrcView extends View implements ILrcView {
 
         @Override
         public void onAnimationUpdate(ValueAnimator animation) {
-            //TODO
             mCurTextXForHighLightLrc = (Float) animation.getAnimatedValue();
             log("mCurTextXForHighLightLrc=" + mCurTextXForHighLightLrc);
             invalidate();
